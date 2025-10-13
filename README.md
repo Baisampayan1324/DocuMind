@@ -1,4 +1,4 @@
-# DocuMind - AI RAG Chat System
+# DocuMind — AI RAG Chat System
 
 > **Enterprise-grade Retrieval-Augmented Generation (RAG) system** with multi-LLM support, FastAPI backend, and Streamlit frontend
 

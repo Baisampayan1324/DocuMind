@@ -1,0 +1,91 @@
+## Environment files (contain sensitive API keys)
+# Ignore any .env variants anywhere
+**/.env
+**/.env.*
+# But keep templates checked in
+!**/.env.template
+!**/config.py.template
+
+## Configuration
+# Do NOT ignore tracked config files; rely on env vars instead.
+# If you have a local override, use config.local.py and keep it ignored:
+config.local.py
+backend/config.local.py
+
+## Python
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+site/
+
+## Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env*/
+
+## FAISS index and vector cache
+faiss_index/
+**/faiss_index/
+*.index
+*.faiss
+*.pkl
+
+## Runtime data folder
+data/
+*.db
+temp_*
+
+## Temporary files and caches
+temp_*
+**/temp_*
+*.cache
+**/.cache/
+.pytest_cache/
+**/.pytest_cache/
+coverage.xml
+.coverage*
+htmlcov/
+pytestdebug.log
+
+## Logs
+*.log
+logs/
+**/logs/
+
+## IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.code-workspace
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Jupyter Notebooks
+.ipynb_checkpoints/
+
+## Streamlit
+.streamlit/

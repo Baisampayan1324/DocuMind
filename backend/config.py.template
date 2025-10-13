@@ -1,0 +1,26 @@
+import os
+
+class Config:
+    # API Keys - REPLACE WITH YOUR ACTUAL API KEYS
+    # DO NOT COMMIT REAL API KEYS TO VERSION CONTROL
+    GROQ_API_KEY = "your_groq_api_key_here"
+    OPENROUTER_API_KEY = "your_openrouter_api_key_here"
+    OPENAI_API_KEY = None  # Optional - only if you have OpenAI API key
+
+    # Models - Current working models (update as needed)
+    GROQ_MODEL = "llama-3.1-8b-instant"
+    OPENROUTER_MODEL = "meta-llama/llama-3.1-8b-instruct"
+    OPENAI_MODEL = "gpt-4o-mini"
+
+    # Chunking Configuration
+    CHUNK_SIZE = 1000
+    CHUNK_OVERLAP = 200
+
+    # Retrieval Configuration
+    TOP_K_CHUNKS = 4
+
+    # Embedding Model
+    EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+    # FAISS index storage
+    FAISS_PERSIST_DIR = "faiss_index"
