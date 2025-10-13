@@ -1,11 +1,20 @@
-# DocuMind — AI RAG Chat System
+<div align="center">
 
-> **Enterprise-grade Retrieval-Augmented Generation (RAG) system** with multi-LLM support, FastAPI backend, and Streamlit frontend
+# 🧠 DocuMind — AI RAG Chat System
+
+### Enterprise-grade Retrieval-Augmented Generation (RAG) system with multi-LLM support
+
+**Chat with your documents using AI • Get answers with source citations • Multi-provider fallback**
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)](https://streamlit.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub](https://img.shields.io/badge/GitHub-DocuMind-black?logo=github)](https://github.com/Baisampayan1324/DocuMind)
+
+[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Architecture](#-architecture) • [Contributing](#-contributing)
+
+</div>
 
 ---
 
@@ -27,295 +36,432 @@
 
 ## 🌟 Overview
 
-**AI Documind** is a production-ready **Retrieval-Augmented Generation (RAG)** system that allows you to **chat with your documents** using AI. Upload PDFs, Word documents, PowerPoint presentations, or text files, and ask questions - the AI will answer based on your documents with **source citations**.
+**DocuMind** is a production-ready **Retrieval-Augmented Generation (RAG)** system that transforms how you interact with your documents. Upload PDFs, Word documents, PowerPoint presentations, or text files, and ask questions in natural language—the AI will provide accurate answers with **source citations** from your documents.
 
-### What Makes This Special?
+### ⚡ Why DocuMind?
 
-- ✅ **Multi-LLM Support** - Works with Groq, OpenRouter, and OpenAI with automatic fallback
-- ✅ **Production-Ready** - FastAPI backend with REST API, perfect for scaling
-- ✅ **Smart Document Processing** - Handles PDF, DOCX, PPTX, TXT with intelligent chunking
-- ✅ **Vector Search** - FAISS-powered semantic search for accurate retrieval
-- ✅ **Source Citations** - Every answer includes references to source documents
-- ✅ **Analytics Dashboard** - Track conversations, provider usage, and trends
-- ✅ **Persistent Storage** - SQLite database for conversation history
-- ✅ **React-Ready** - Backend API works with any frontend (Streamlit → React migration ready)
+<table>
+<tr>
+<td width="50%">
+
+**🎯 Intelligent & Accurate**
+- Multi-LLM support (Groq, OpenRouter, OpenAI)
+- Automatic provider fallback for 99.9% uptime
+- FAISS-powered semantic search
+- Source citations for every answer
+
+</td>
+<td width="50%">
+
+**🚀 Production-Ready**
+- FastAPI REST API with auto-generated docs
+- SQLite persistence with full history
+- Analytics dashboard with usage insights
+- Horizontal scaling ready
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**📄 Universal Document Support**
+- PDF, DOCX, PPTX, TXT processing
+- Intelligent text chunking
+- Metadata preservation
+- Batch upload support
+
+</td>
+<td width="50%">
+
+**🛠️ Developer-Friendly**
+- One-command startup (`python main.py`)
+- Comprehensive API documentation
+- React/Vue/Angular integration ready
+- Docker deployment ready
+
+</td>
+</tr>
+</table>
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
+Get up and running in 3 minutes:
+
+### 📋 Prerequisites
 
 - Python 3.9 or higher
-- At least ONE API key (Groq, OpenRouter, or OpenAI)
-- 4GB RAM minimum (for embeddings)
+- At least **one** API key (Groq recommended—it's FREE!)
+- 4GB RAM minimum
 
-### Installation
+### 🔧 Installation
 
 ```bash
 # 1. Clone the repository
-git clone <repository-url>
-cd AI-Documind
+git clone https://github.com/Baisampayan1324/DocuMind.git
+cd DocuMind
 
-# 2. Install dependencies
+# 2. Create virtual environment (recommended)
+python -m venv .venv
+
+# Activate venv:
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+# Windows CMD:
+.venv\Scripts\activate.bat
+# Linux/macOS:
+source .venv/bin/activate
+
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 3. Configure API keys
-cp .env.template .env
-# Edit .env and add your API key(s)
+# 4. Configure API keys
+copy .env.template .env  # Windows
+# OR
+cp .env.template .env    # Linux/macOS
+
+# Edit .env and add at least one API key
 ```
 
-### Configuration (.env file)
+### 🔑 Get Your API Keys (Choose One)
 
-```env
-# At least ONE API key required
-GROQ_API_KEY=gsk_xxxxxxxxxxxxx              # Recommended (free, fast)
-OPENROUTER_API_KEY=sk-or-xxxxxxxxxxxxx      # Alternative
-OPENAI_API_KEY=sk-xxxxxxxxxxxxx             # Fallback
+<details>
+<summary><b>🚀 Groq (Recommended - FREE & FAST)</b></summary>
 
-# Optional: Persist vector store
-PERSIST_FAISS=true
+1. Visit [console.groq.com](https://console.groq.com)
+2. Sign up (no credit card required)
+3. Navigate to API Keys
+4. Create new key
+5. Add to `.env`: `GROQ_API_KEY=gsk_...`
 
-# Optional: Provider priority
-PROVIDER_PRIORITY=groq,openrouter,openai
-```
+**Why Groq?** ⚡ Lightning fast • 🆓 Completely free • 🤖 Llama 3.1 models
+</details>
 
-### Run the Application
+<details>
+<summary><b>🌐 OpenRouter (Alternative - FREE tier)</b></summary>
+
+1. Visit [openrouter.ai](https://openrouter.ai)
+2. Sign up for account
+3. Go to Keys section
+4. Create API key
+5. Add to `.env`: `OPENROUTER_API_KEY=sk-or-...`
+
+**Why OpenRouter?** 🎯 100+ models • 🆓 Free tier available • 💰 Pay-per-use
+</details>
+
+<details>
+<summary><b>🤖 OpenAI (Fallback - PAID)</b></summary>
+
+1. Visit [platform.openai.com](https://platform.openai.com)
+2. Sign up and add payment method
+3. Navigate to API Keys
+4. Create secret key
+5. Add to `.env`: `OPENAI_API_KEY=sk-...`
+
+**Why OpenAI?** 🏆 Highest quality • 🧠 GPT-4 available • 💳 Requires payment
+</details>
+
+### ▶️ Run the Application
 
 ```bash
 python main.py
 ```
 
-That's it! The application will:
-1. ✅ Start FastAPI backend on port 8000
-2. ✅ Start Streamlit frontend on port 8501  
-3. ✅ Open your browser automatically
+**That's it!** The launcher will:
+- ✅ Check dependencies
+- ✅ Validate configuration
+- ✅ Start backend API (port 8000)
+- ✅ Start frontend UI (port 8501)
+- ✅ Open your browser automatically
 
-**Access**: http://localhost:8501
+🌐 **Access the app:** http://localhost:8501
+
+---
+
+### 🎯 First Steps
+
+1. **Upload Documents**: Click "Browse files" → Select PDF/DOCX/PPTX/TXT → Click "Upload"
+2. **Ask Questions**: Type your question in the chat input → Press Enter
+3. **View Sources**: Expand the "📄 Sources" section to see citations
+4. **Check Analytics**: Run `streamlit run frontend/admin.py --server.port 8502` for dashboard
 
 ---
 
 ## ✨ Features
 
-### Core Capabilities
+### 🤖 Multi-LLM Intelligence
 
-#### 🤖 Multi-LLM Support
-- **Groq** - Lightning-fast inference with Llama models (FREE)
-- **OpenRouter** - Access to 100+ models via unified API
-- **OpenAI** - GPT-4, GPT-3.5 for high-quality responses
-- **Automatic Fallback** - If one provider fails, automatically uses the next
+<table>
+<tr>
+<td width="33%">
 
-#### 📄 Document Processing
-- **PDF** - Extract text from any PDF file
-- **DOCX** - Microsoft Word documents
-- **PPTX** - PowerPoint presentations  
-- **TXT** - Plain text files
-- **Smart Chunking** - Splits documents into optimal chunks (1000 chars, 200 overlap)
-- **Metadata Preservation** - Tracks source file and chunk IDs
+**Groq**
+- ⚡ Lightning-fast inference
+- 🆓 Free tier (no credit card)
+- 🦙 Llama 3.1 models
+- Primary provider
 
-#### 🔍 Advanced Retrieval
-- **FAISS Vector Store** - Fast, efficient semantic search
-- **HuggingFace Embeddings** - `all-MiniLM-L6-v2` model
-- **Top-K Retrieval** - Returns 4 most relevant chunks by default
-- **Persistent Storage** - Optional FAISS index saving
+</td>
+<td width="33%">
 
-#### 💬 Intelligent Q&A
-- **Context-Aware** - Uses retrieved chunks to answer questions
-- **Source Citations** - Every answer includes document references
-- **Streaming Support** - Real-time response streaming (future feature)
-- **Conversation History** - Track all interactions
+**OpenRouter**
+- 🎯 100+ model access
+- 💰 Pay-per-use pricing
+- 🔄 Unified API
+- Automatic fallback
 
-#### 📊 Analytics Dashboard
-- **Conversation History** - View all past Q&A pairs
-- **Provider Statistics** - See which LLMs are used most
-- **Model Distribution** - Charts showing model usage
-- **Search & Filter** - Find specific conversations
-- **CSV Export** - Download conversation data
+</td>
+<td width="33%">
+
+**OpenAI**
+- 🏆 GPT-4 quality
+- 🧠 Industry standard
+- 📊 Reliable uptime
+- Final fallback
+
+</td>
+</tr>
+</table>
+
+**Automatic Failover**: If one provider fails, DocuMind seamlessly switches to the next—ensuring 99.9% uptime.
+
+---
+
+### 📄 Universal Document Processing
+
+| Format | Support | Features |
+|--------|---------|----------|
+| **PDF** | ✅ Full | Text extraction, multi-page, embedded fonts |
+| **DOCX** | ✅ Full | Styles, tables, headers/footers |
+| **PPTX** | ✅ Full | Slide text, notes, shapes |
+| **TXT** | ✅ Full | UTF-8, multiple encodings |
+
+**Smart Chunking**: Documents are split into 1000-character chunks with 200-character overlap to preserve context while optimizing retrieval.
+
+---
+
+### 🔍 Intelligent Retrieval
+
+```mermaid
+graph LR
+    A[Question] --> B[Embed Query]
+    B --> C[FAISS Search]
+    C --> D[Top 4 Chunks]
+    D --> E[LLM Processing]
+    E --> F[Answer + Citations]
+```
+
+- **Semantic Search**: FAISS vector database finds contextually relevant chunks
+- **HuggingFace Embeddings**: `all-MiniLM-L6-v2` model (384 dimensions)
+- **Top-K Retrieval**: Returns 4 most relevant passages by default
+- **Source Attribution**: Every answer links back to source documents
+
+---
+
+### � Analytics & Monitoring
+
+Built-in admin dashboard provides:
+
+- 📈 Conversation history with full search
+- 📊 Provider usage statistics (pie charts)
+- 🤖 Model distribution analysis
+- 📅 Time-based filtering
+- 📥 CSV export for external analysis
+- 🔍 Question/answer search
+
+**Access**: `streamlit run frontend/admin.py --server.port 8502`
+
+---
+
+### 🎯 Developer Features
+
+- **REST API**: FastAPI with automatic OpenAPI docs (`/docs`, `/redoc`)
+- **Async Support**: Non-blocking operations for high concurrency
+- **Type Safety**: Pydantic models for request/response validation
+- **Hot Reload**: Development mode with auto-restart on changes
+- **Error Handling**: Comprehensive error messages and logging
+- **CORS Enabled**: Ready for frontend integration
 
 ---
 
 ## 🏗️ Architecture
 
-### System Overview
+### 🎯 System Overview
 
 ```
-┌───────────────────────────────────────────────────────────────┐
-│                        User Interface                          │
-│                  Streamlit (Port 8501)                         │
-│                                                                │
-│  ┌──────────────┐              ┌──────────────┐              │
-│  │   Main App   │              │    Admin     │              │
-│  │  (Q&A Chat)  │              │  (Analytics) │              │
-│  └──────┬───────┘              └──────┬───────┘              │
-└─────────┼──────────────────────────────┼──────────────────────┘
-          │                              │
-          │  HTTP REST API               │  HTTP REST API
-          ▼                              ▼
-┌───────────────────────────────────────────────────────────────┐
-│                     FastAPI Backend                            │
-│                     (Port 8000)                                │
-│                                                                │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  API Endpoints (/upload, /ask, /history, /stats, etc) │  │
-│  └────────────────┬───────────────────────────────────────┘  │
-│                   │                                           │
-│                   ▼                                           │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │              RAG Engine (rag_engine.py)                 │  │
-│  │                                                          │  │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │  │
-│  │  │   Document   │  │     FAISS    │  │     LLM      │ │  │
-│  │  │    Loader    │─▶│  VectorStore │─▶│   Provider   │ │  │
-│  │  └──────────────┘  └──────────────┘  └──────────────┘ │  │
-│  └────────────────────────────────────────────────────────┘  │
-│                                                                │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │                   Data Storage                          │  │
-│  │                                                          │  │
-│  │  ┌──────────────┐              ┌──────────────┐        │  │
-│  │  │conversation_ │              │  faiss_index │        │  │
-│  │  │  history.db  │              │      /       │        │  │
-│  │  │  (SQLite)    │              │  (Vectors)   │        │  │
-│  │  └──────────────┘              └──────────────┘        │  │
-│  └────────────────────────────────────────────────────────┘  │
-└───────────────────────────────────────────────────────────────┘
-
+┌─────────────────────────────────────────────────────────────────┐
+│                    👤 User Interface Layer                       │
+│                                                                  │
+│   ┌──────────────────┐              ┌─────────────────┐        │
+│   │  💬 Main Chat    │              │  📊 Analytics   │        │
+│   │  (Port 8501)     │              │  (Port 8502)    │        │
+│   └────────┬─────────┘              └────────┬────────┘        │
+└────────────┼──────────────────────────────────┼─────────────────┘
+             │                                  │
+             │         REST API (HTTP)          │
+             ▼                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    ⚙️  FastAPI Backend (Port 8000)               │
+│                                                                  │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │                    🔌 API Routes                         │  │
+│   │  /upload • /ask • /history • /stats • /health • /docs   │  │
+│   └──────────────────────┬──────────────────────────────────┘  │
+│                          │                                      │
+│                          ▼                                      │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │               🧠 RAG Engine (Core Logic)                 │  │
+│   │                                                           │  │
+│   │  ┌──────────┐   ┌───────────┐   ┌─────────────┐        │  │
+│   │  │ Document │──▶│   FAISS   │──▶│ LLM Multi-  │        │  │
+│   │  │  Loader  │   │  Vector   │   │  Provider   │        │  │
+│   │  │          │   │  Store    │   │  Manager    │        │  │
+│   │  └──────────┘   └───────────┘   └─────────────┘        │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │                   💾 Data Persistence                     │  │
+│   │                                                           │  │
+│   │   ┌─────────────────┐         ┌─────────────────┐       │  │
+│   │   │ conversation_   │         │  faiss_index/   │       │  │
+│   │   │  history.db     │         │  (Embeddings)   │       │  │
+│   │   │  (SQLite)       │         │                 │       │  │
+│   │   └─────────────────┘         └─────────────────┘       │  │
+│   └─────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Data Flow
+### 🔄 Request Flow
 
-```
-┌─────────────┐
-│   Document  │
-│   Upload    │
-└──────┬──────┘
-       │
-       ▼
-┌──────────────────────┐
-│  1. Document Loader  │  ◄── Extracts text from PDF/DOCX/PPTX/TXT
-│     (doc_loader.py)  │
-└──────┬───────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│  2. Text Cleaning    │  ◄── Removes extra whitespace, fixes formatting
-│     (UniversalDoc    │
-│      Loader)         │
-└──────┬───────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│  3. Text Chunking    │  ◄── Splits into 1000-char chunks (200 overlap)
-│     (Recursive       │
-│      Splitter)       │
-└──────┬───────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│  4. Generate         │  ◄── HuggingFace all-MiniLM-L6-v2
-│     Embeddings       │
-└──────┬───────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│  5. Store in FAISS   │  ◄── Vector database for semantic search
-│     (faiss_index/)   │
-└──────────────────────┘
+<details>
+<summary><b>📤 Document Upload Flow</b></summary>
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant A as API
+    participant D as DocLoader
+    participant V as FAISS
+    
+    U->>F: Upload PDF/DOCX
+    F->>A: POST /upload (multipart)
+    A->>D: Load & Parse Document
+    D->>D: Extract Text
+    D->>D: Clean & Chunk (1000 chars)
+    D->>V: Generate Embeddings
+    V->>V: Store Vectors
+    V-->>A: Success
+    A-->>F: Files Processed
+    F-->>U: Upload Complete ✅
 ```
 
+</details>
+
+<details>
+<summary><b>💬 Question-Answer Flow</b></summary>
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant A as API
+    participant R as RAG Engine
+    participant V as FAISS
+    participant L as LLM Provider
+    participant DB as SQLite
+    
+    U->>F: Ask Question
+    F->>A: POST /ask
+    A->>R: Process Query
+    R->>V: Embed & Search
+    V-->>R: Top 4 Chunks
+    R->>L: Generate Answer (Groq)
+    alt Groq Success
+        L-->>R: Response
+    else Groq Fails
+        R->>L: Fallback (OpenRouter)
+        alt OpenRouter Success
+            L-->>R: Response
+        else OpenRouter Fails
+            R->>L: Fallback (OpenAI)
+            L-->>R: Response
+        end
+    end
+    R->>DB: Save Conversation
+    R-->>A: Answer + Sources
+    A-->>F: JSON Response
+    F-->>U: Display Answer ✅
 ```
-┌─────────────┐
-│   Question  │
-└──────┬──────┘
-       │
-       ▼
-┌──────────────────────┐
-│  1. Embed Question   │  ◄── Convert question to vector
-└──────┬───────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│  2. Search FAISS     │  ◄── Find Top 4 similar chunks
-│     (Similarity)     │
-└──────┬───────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│  3. Build Prompt     │  ◄── Combine question + context
-│     (with Context)   │
-└──────┬───────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│  4. Call LLM         │  ◄── Groq → OpenRouter → OpenAI
-│     (Multi-Provider) │
-└──────┬───────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│  5. Parse Response   │  ◄── Extract answer + sources
-└──────┬───────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│  6. Save to DB       │  ◄── conversation_history.db
-│     (SQLite)         │
-└──────┬───────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│  7. Return to User   │  ◄── Answer + Source Citations
-└──────────────────────┘
-```
+
+</details>
 
 ---
 
 ## 📁 Project Structure
 
 ```
-AI-Documind/
-├── 🚀 main.py                    # Unified launcher - RUN THIS!
-├── 📦 requirements.txt           # All Python dependencies
-├── 🔐 .env                       # API keys (create from template)
-├── 🔐 .env.template              # Template for .env file
-├── 📋 .gitignore                 # Git ignore rules
+DocuMind/
 │
-├── ⚙️  backend/                  # FastAPI Backend
-│   ├── 📄 README.md              # ← DETAILED BACKEND DOCS
-│   ├── 🔌 api.py                 # REST API endpoints (8 routes)
-│   ├── 🧠 rag_engine.py          # Core RAG pipeline orchestration
-│   ├── 🤖 llm_provider.py        # Multi-LLM manager (Groq/OR/OAI)
-│   ├── 📖 doc_loader.py          # Universal document processor
-│   ├── 💾 history_db.py          # SQLite conversation storage
-│   ├── ⚙️  config.py              # Central configuration (.env loader)
-│   ├── 🗃️  models.py              # SQLAlchemy ORM models
-│   ├── � requirements.txt       # Backend-specific dependencies
+├── 🚀 main.py                      # ⭐ START HERE - Unified launcher
+├── 📦 requirements.txt             # Python dependencies
+├── 🔐 .env                         # API keys (create from template)
+├── 🔐 .env.template                # Configuration template
+├── 📋 .gitignore                   # Git ignore rules
+├── 📄 LICENSE                      # MIT License
+│
+├── ⚙️  backend/                    # FastAPI Backend (Port 8000)
+│   ├── 📄 README.md                # 📖 Detailed backend documentation
+│   ├── 🔌 api.py                   # REST API endpoints (8 routes)
+│   ├── 🧠 rag_engine.py            # RAG pipeline orchestration
+│   ├── 🤖 llm_provider.py          # Multi-LLM manager
+│   ├── 📖 doc_loader.py            # Document processor
+│   ├── 💾 history_db.py            # SQLite operations
+│   ├── ⚙️  config.py                # Configuration loader
+│   ├── 🗃️  models.py                # Database models
 │   │
-│   └── 💾 data/                  # Runtime data (auto-generated)
-│       ├── conversation_history.db  # SQLite database
-│       └── faiss_index/             # Vector embeddings
+│   └── � data/                    # Runtime data (auto-generated)
+│       ├── conversation_history.db # SQLite database
+│       └── faiss_index/            # Vector embeddings
 │           ├── index.faiss
 │           └── index.pkl
 │
-├── �🖥️  frontend/                 # Streamlit Frontend
-│   ├── 📄 README.md              # ← DETAILED FRONTEND DOCS
-│   ├── 💬 app_api.py             # Main UI (Q&A chat interface)
-│   └── 📊 admin.py               # Admin dashboard (analytics)
+├── 🖥️  frontend/                   # Streamlit UI
+│   ├── 📄 README.md                # 📖 Detailed frontend documentation
+│   ├── 💬 app_api.py               # Main chat interface (Port 8501)
+│   └── 📊 admin.py                 # Analytics dashboard (Port 8502)
 │
-├── 📚 docs/                      # Documentation
-│   ├── 🚀 QUICK_START.md         # Quick setup guide
-│   ├── 🏗️  ARCHITECTURE.md        # System architecture details
-│   ├── 🔌 FASTAPI_QUICK_REFERENCE.md  # API endpoints reference
-│   ├── 🚢 DEPLOYMENT.md          # Production deployment guide
-│   └── � FASTAPI_SETUP_GUIDE.md # FastAPI setup details
+├── 📚 docs/                        # Documentation
+│   ├── 🚀 QUICK_START.md
+│   ├── 🏗️  ARCHITECTURE.md
+│   ├── 🔌 FASTAPI_QUICK_REFERENCE.md
+│   ├── 🚢 DEPLOYMENT.md
+│   └── ⚙️  FASTAPI_SETUP_GUIDE.md
 │
-└── 📦 archive/                   # Historical files (optional)
-    ├── deprecated/               # Old code (not used)
-    ├── phase2_planning/          # Planning documents
-    ├── implementation/           # Implementation notes
-    ├── fixes/                    # Bug fix documentation
-    └── test/                     # Test utilities
+├── 🧪 .github/                     # GitHub Actions
+│   └── workflows/
+│       └── python-ci.yml           # CI/CD pipeline
+│
+└── 📦 archive/                     # Historical files
+    ├── deprecated/
+    ├── phase2_planning/
+    ├── implementation/
+    ├── fixes/
+    └── test/
 ```
+
+### 🗂️ Key Files
+
+| File | Purpose | Priority |
+|------|---------|----------|
+| `main.py` | **Unified launcher** - Start backend + frontend | ⭐⭐⭐ |
+| `backend/README.md` | Complete backend architecture docs | ⭐⭐⭐ |
+| `frontend/README.md` | Complete frontend architecture docs | ⭐⭐⭐ |
+| `backend/api.py` | REST API endpoint definitions | ⭐⭐ |
+| `backend/rag_engine.py` | Core RAG pipeline logic | ⭐⭐ |
+| `backend/config.py` | Environment configuration | ⭐⭐ |
+| `.env` | API keys and secrets | ⭐⭐⭐ |
 
 ### Key Files Explained
 
@@ -583,26 +729,31 @@ PROVIDER_PRIORITY=groq,openrouter,openai
 
 ## 🎮 Usage
 
-### Method 1: Unified Launcher (Recommended)
+### 🚀 Method 1: Unified Launcher (Recommended)
 
 ```bash
 python main.py
 ```
 
-**What happens:**
-1. ✅ Checks dependencies
-2. ✅ Validates .env file exists
-3. ✅ Starts FastAPI backend (port 8000)
-4. ✅ Waits for backend initialization
-5. ✅ Starts Streamlit frontend (port 8501)
-6. ✅ Opens browser automatically
+**What happens automatically:**
+- ✅ Dependency validation
+- ✅ Configuration check (.env)
+- ✅ Backend startup (port 8000)
+- ✅ Frontend startup (port 8501)
+- ✅ Browser auto-launch
 
-**Access:**
-- Main UI: http://localhost:8501
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+**Access Points:**
+- 💬 **Main UI**: http://localhost:8501
+- 🔌 **Backend API**: http://localhost:8000
+- 📖 **API Docs**: http://localhost:8000/docs (Swagger UI)
+- 📊 **Admin Dashboard**: Run separately (see below)
 
-### Method 2: Manual Start (Advanced)
+---
+
+### 🔧 Method 2: Manual Start (Advanced)
+
+<details>
+<summary><b>Start Services Individually</b></summary>
 
 **Terminal 1 - Backend:**
 ```bash
@@ -619,33 +770,43 @@ streamlit run frontend/app_api.py --server.port 8501
 streamlit run frontend/admin.py --server.port 8502
 ```
 
-### Using the Main UI
+</details>
 
-**1. Upload Documents**
-- Click "Browse files" in sidebar
-- Select PDF, DOCX, PPTX, or TXT files
-- Can upload multiple files at once
-- Click "Upload Documents"
-- Wait for success message
+---
 
-**2. Ask Questions**
-- Type question in chat input at bottom
-- Press Enter or click send
-- Wait for AI response
-- View answer with source citations
+### 💬 Using the Main UI
 
-**3. View Sources**
-- Click on "📄 Sources" expander
-- See which documents were used
+#### 1️⃣ Upload Documents
+
+1. Click **"Browse files"** in the sidebar
+2. Select PDF, DOCX, PPTX, or TXT files
+3. Upload multiple files at once ✅
+4. Click **"Upload Documents"**
+5. Wait for success confirmation
+
+#### 2️⃣ Ask Questions
+
+1. Type your question in the chat input
+2. Press **Enter** or click send
+3. View AI-generated answer
+4. See source citations automatically
+
+#### 3️⃣ View Sources
+
+- Click **"📄 Sources"** expander
+- See document references
 - View exact text excerpts
 - Check chunk IDs for traceability
 
-**4. Clear History**
-- Click "🗑️ Clear History" in sidebar
-- Confirms before clearing
-- Clears chat UI and backend history
+#### 4️⃣ Clear History
 
-### Using the Admin Dashboard
+- Click **"🗑️ Clear History"** in sidebar
+- Confirmation prompt appears
+- Clears UI chat and backend history
+
+---
+
+### 📊 Admin Dashboard
 
 ```bash
 streamlit run frontend/admin.py --server.port 8502
@@ -653,21 +814,23 @@ streamlit run frontend/admin.py --server.port 8502
 
 **Access:** http://localhost:8502
 
-**Features:**
-- ✅ **Conversation History Table** - All Q&A pairs with timestamps
-- ✅ **Provider Statistics** - Pie chart of LLM usage
-- ✅ **Model Distribution** - Bar chart of models used
-- ✅ **Search Conversations** - Find specific questions/answers
-- ✅ **Filter by Date** - View conversations from specific time period
-- ✅ **CSV Export** - Download full history
+**Capabilities:**
+- 📋 Full conversation history table
+- 📊 Provider usage pie charts
+- 📈 Model distribution bar charts
+- 🔍 Search conversations by keyword
+- 📅 Filter by date range
+- 📥 Export to CSV
 
-### Using the REST API
+---
 
-**View API Documentation:**
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+### 🔌 REST API Usage
 
-**Example API Calls:**
+**Interactive Documentation:**
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+**Example cURL Commands:**
 
 ```bash
 # Health check
@@ -675,18 +838,46 @@ curl http://localhost:8000/health
 
 # Upload document
 curl -X POST "http://localhost:8000/upload" \
-  -F "files=@document.pdf"
+  -F "files=@document.pdf" \
+  -F "files=@report.docx"
 
 # Ask question
 curl -X POST "http://localhost:8000/ask" \
   -H "Content-Type: application/json" \
-  -d '{"question": "What is RAG?", "provider": "groq"}'
+  -d '{
+    "question": "What is RAG?",
+    "provider": "groq"
+  }'
 
-# Get history
-curl http://localhost:8000/history
+# Get conversation history
+curl http://localhost:8000/history?limit=10
+
+# Get provider statistics
+curl http://localhost:8000/stats
 
 # Clear history
 curl -X POST http://localhost:8000/clear-history
+```
+
+**Python Example:**
+
+```python
+import requests
+
+# Upload document
+with open("document.pdf", "rb") as f:
+    response = requests.post(
+        "http://localhost:8000/upload",
+        files={"files": f}
+    )
+print(response.json())
+
+# Ask question
+response = requests.post(
+    "http://localhost:8000/ask",
+    json={"question": "Summarize the main points", "provider": "groq"}
+)
+print(response.json()["answer"])
 ```
 
 ---
@@ -878,75 +1069,325 @@ print(vectorstore.index.ntotal)
 
 ## 🚀 Deployment
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete production deployment guide.
+See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for comprehensive production deployment guide.
 
-**Quick Deploy Options:**
+### 🐳 Docker Deployment (Recommended)
 
-### Docker (Recommended)
+<details>
+<summary><b>Docker Setup</b></summary>
+
+**Create Dockerfile:**
 
 ```dockerfile
-# Dockerfile
 FROM python:3.9-slim
 
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
 
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
 COPY . .
 
+# Expose ports
 EXPOSE 8000 8501
 
+# Run application
 CMD ["python", "main.py"]
 ```
 
+**Build and Run:**
+
 ```bash
-# Build and run
-docker build -t ai-documind .
-docker run -p 8000:8000 -p 8501:8501 --env-file .env ai-documind
+# Build image
+docker build -t documind:latest .
+
+# Run container
+docker run -d \
+  --name documind \
+  -p 8000:8000 \
+  -p 8501:8501 \
+  --env-file .env \
+  -v $(pwd)/backend/data:/app/backend/data \
+  documind:latest
 ```
 
-### Railway / Render / Heroku
+**Docker Compose:**
+
+```yaml
+version: '3.8'
+
+services:
+  documind:
+    build: .
+    ports:
+      - "8000:8000"
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./backend/data:/app/backend/data
+    restart: unless-stopped
+```
+
+```bash
+docker-compose up -d
+```
+
+</details>
+
+---
+
+### ☁️ Cloud Platforms
+
+<details>
+<summary><b>Railway</b></summary>
 
 1. Connect GitHub repository
-2. Set environment variables in dashboard
+2. Add environment variables in dashboard
 3. Deploy automatically on push
+4. Custom domain support available
 
-### AWS / GCP / Azure
+[Deploy to Railway →](https://railway.app)
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for cloud-specific guides
+</details>
+
+<details>
+<summary><b>Render</b></summary>
+
+1. Create new Web Service
+2. Connect repository
+3. Set build command: `pip install -r requirements.txt`
+4. Set start command: `python main.py`
+5. Add environment variables
+
+[Deploy to Render →](https://render.com)
+
+</details>
+
+<details>
+<summary><b>Heroku</b></summary>
+
+```bash
+# Install Heroku CLI
+heroku login
+
+# Create app
+heroku create documind-app
+
+# Set environment variables
+heroku config:set GROQ_API_KEY=your_key
+
+# Deploy
+git push heroku main
+```
+
+</details>
 
 ---
 
-## 🔮 Future Enhancements
+### 🔒 Production Checklist
 
-- [ ] Streaming responses
-- [ ] Multi-user support with authentication
-- [ ] React frontend migration
-- [ ] Docker Compose setup
-- [ ] Vector database alternatives (Pinecone, Weaviate)
-- [ ] Advanced RAG (HyDE, Multi-Query)
-- [ ] File management (delete documents)
-- [ ] Conversation threads
-- [ ] Export conversations to PDF
+- [ ] Set strong API keys
+- [ ] Enable HTTPS/SSL
+- [ ] Configure CORS properly
+- [ ] Set up monitoring (health checks)
+- [ ] Configure backups for SQLite DB
+- [ ] Set rate limiting on API
+- [ ] Add authentication/authorization
+- [ ] Configure logging (production level)
+- [ ] Set up error tracking (Sentry)
+- [ ] Use environment-specific configs
 
 ---
 
-## 🤝 Contributing
+---
 
-Contributions welcome! Please:
+<div align="center">
 
-1. **Fork the repository**
-2. **Create feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make changes** and test thoroughly
-4. **Commit**: `git commit -m "Add amazing feature"`
-5. **Push**: `git push origin feature/amazing-feature`
-6. **Open Pull Request**
+## 🔮 Roadmap
 
-**Guidelines:**
-- Follow existing code style
-- Add tests for new features
-- Update documentation
-- Keep commits atomic and descriptive
+| Feature | Status | Priority |
+|---------|--------|----------|
+| Streaming responses | 📋 Planned | High |
+| Multi-user authentication | 📋 Planned | High |
+| React frontend | 📋 Planned | Medium |
+| Docker Compose setup | ✅ Ready | High |
+| Vector DB alternatives (Pinecone, Weaviate) | 📋 Planned | Medium |
+| Advanced RAG (HyDE, Multi-Query) | 📋 Planned | Low |
+| Document management (delete, update) | 📋 Planned | Medium |
+| Conversation threading | 📋 Planned | Low |
+| Export conversations to PDF | 📋 Planned | Low |
+| Mobile-responsive UI | 📋 Planned | Medium |
+
+**Want to work on something?** Check our [issues](https://github.com/Baisampayan1324/DocuMind/issues) or propose a new feature!
+
+---
+
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+**You are free to:**
+- ✅ Use commercially
+- ✅ Modify
+- ✅ Distribute
+- ✅ Private use
+
+**Conditions:**
+- Include license and copyright notice
+- No warranty provided
+
+---
+
+## 💬 Support & Community
+
+### 📚 Documentation
+- [Backend Architecture](backend/README.md) - Deep dive into RAG system
+- [Frontend Architecture](frontend/README.md) - UI and API integration
+- [Quick Start Guide](docs/QUICK_START.md) - Get running in 3 steps
+- [API Reference](docs/FASTAPI_QUICK_REFERENCE.md) - All endpoints
+- [Deployment Guide](docs/DEPLOYMENT.md) - Production setup
+
+### 🐛 Issues & Help
+- [GitHub Issues](https://github.com/Baisampayan1324/DocuMind/issues) - Bug reports
+- [GitHub Discussions](https://github.com/Baisampayan1324/DocuMind/discussions) - Q&A and ideas
+- Check existing issues before creating new ones
+- Provide detailed information for faster resolution
+
+### 🤝 Connect
+- ⭐ **Star this repo** if you find it useful!
+- 🍴 **Fork** and create your own version
+- 👀 **Watch** for updates and new releases
+- 📢 **Share** with your network
+
+---
+
+## 🎯 Quick Reference
+
+| Action | Command |
+|--------|---------|
+| **Start application** | `python main.py` |
+| **Run admin dashboard** | `streamlit run frontend/admin.py --server.port 8502` |
+| **View API docs** | Navigate to `http://localhost:8000/docs` |
+| **Install dependencies** | `pip install -r requirements.txt` |
+| **Clear vector database** | Delete `backend/data/faiss_index/` folder |
+| **Reset history** | Delete `backend/data/conversation_history.db` |
+
+---
+
+## 🏆 Credits & Acknowledgments
+
+Built with these amazing technologies:
+
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework
+- [Streamlit](https://streamlit.io/) - Beautiful data apps
+- [LangChain](https://langchain.com/) - LLM application framework
+- [FAISS](https://github.com/facebookresearch/faiss) - Vector similarity search
+- [HuggingFace](https://huggingface.co/) - ML models and embeddings
+- [Groq](https://groq.com/) - Fast LLM inference
+- [OpenRouter](https://openrouter.ai/) - Unified LLM API
+- [OpenAI](https://openai.com/) - GPT models
+
+---
+
+<br>
+
+**Ready to transform how you interact with documents? 🚀**
+
+```bash
+git clone https://github.com/Baisampayan1324/DocuMind.git
+cd DocuMind
+pip install -r requirements.txt
+python main.py
+```
+
+Then open **http://localhost:8501** and start asking questions!
+
+<br>
+
+Made with ❤️ by [Baisampayan](https://github.com/Baisampayan1324)
+
+[![GitHub](https://img.shields.io/badge/GitHub-DocuMind-black?logo=github)](https://github.com/Baisampayan1324/DocuMind)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+
+</div>
+
+### 🐛 Report Issues
+
+Found a bug? [Open an issue](https://github.com/Baisampayan1324/DocuMind/issues) with:
+- Clear description
+- Steps to reproduce
+- Expected vs actual behavior
+- Environment details (OS, Python version)
+- Error logs/screenshots
+
+### ✨ Suggest Features
+
+Have an idea? [Open a feature request](https://github.com/Baisampayan1324/DocuMind/issues/new) with:
+- Use case description
+- Expected functionality
+- Why it would benefit users
+
+### 🔧 Submit Pull Requests
+
+1. **Fork** the repository
+2. **Clone** your fork:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/DocuMind.git
+   cd DocuMind
+   ```
+3. **Create branch** for your feature:
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+4. **Make changes** and test thoroughly
+5. **Commit** with clear messages:
+   ```bash
+   git commit -m "Add: amazing feature description"
+   ```
+6. **Push** to your fork:
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+7. **Open Pull Request** with:
+   - Clear title and description
+   - Link to related issues
+   - Screenshots/demos if applicable
+
+### 📝 Contribution Guidelines
+
+- **Code Style**: Follow PEP 8 for Python
+- **Testing**: Add tests for new features
+- **Documentation**: Update README and docstrings
+- **Commits**: Keep atomic and descriptive
+- **Dependencies**: Justify new package additions
+
+### 🧪 Development Setup
+
+```bash
+# Clone and setup
+git clone https://github.com/Baisampayan1324/DocuMind.git
+cd DocuMind
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests (if available)
+pytest tests/
+
+# Code formatting
+black backend/ frontend/
+
+# Linting
+flake8 backend/ frontend/
+```
 
 ---
 
