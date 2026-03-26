@@ -1,53 +1,20 @@
-# DocuMind Frontend (React + Vite)
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-React + TypeScript frontend for DocuMind, integrated with FastAPI backend endpoints.
+# Run and deploy your AI Studio app
 
-## Run
+This contains everything you need to run your app locally.
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+View your app in AI Studio: https://ai.studio/apps/ca36ef02-2ea3-4d4f-8ae7-8c0f69ff0715
 
-Frontend default URL: `http://localhost:3000`
+## Run Locally
 
-## Backend Integration
+**Prerequisites:**  Node.js
 
-The UI calls backend APIs directly:
 
-- `POST /upload`
-- `POST /ask`
-- `GET /history`
-- `GET /stats`
-
-Default backend base URL:
-
-- `http://localhost:8000`
-
-Override with env var (Vite):
-
-```bash
-# Windows PowerShell
-$env:VITE_API_BASE_URL="http://localhost:8000"
-npm run dev
-```
-
-## Package Files
-
-Both files are required and present:
-
-- `package.json` (dependencies + scripts)
-- `package-lock.json` (locked dependency tree)
-
-If dependency metadata gets out of sync, run:
-
-```bash
-cd frontend
-npm install
-```
-
-## Notes
-
-- Streamlit frontend artifacts were removed from `frontend/`.
-- `src/vite-env.d.ts` includes Vite types so `import.meta.env` works with TypeScript.
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

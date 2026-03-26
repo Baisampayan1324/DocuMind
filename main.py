@@ -10,6 +10,10 @@ import time
 import signal
 from pathlib import Path
 
+# Force UTF-8 for emoji support in cmd/powershell
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 # Color codes for terminal output
 class Colors:
     HEADER = '\033[95m'
@@ -40,12 +44,12 @@ def ensure_venv_python():
     if current_python == target_python:
         return
 
-    print_colored("\n🔁 Switching to project virtual environment (.venv)...", Colors.YELLOW)
+    print_colored("\n[>] Switching to project virtual environment (.venv)...", Colors.YELLOW)
     os.execv(str(target_python), [str(target_python), str(Path(__file__).resolve())] + sys.argv[1:])
 
 def check_dependencies():
     """Check if required packages are installed"""
-    print_colored("\n🔍 Checking dependencies...", Colors.BLUE)
+    print_colored("\n[?] Checking dependencies...", Colors.BLUE)
     
     # Map package names to import names
     packages = {
@@ -66,29 +70,29 @@ def check_dependencies():
             missing.append(f"{package} (import error: {e.__class__.__name__}: {e})")
     
     if missing:
-        print_colored(f"❌ Missing packages: {', '.join(missing)}", Colors.RED)
-        print_colored("\nInstall with: pip install -r requirements.txt", Colors.YELLOW)
+        print_colored(f"[X] Missing packages: {', '.join(missing)}", Colors.RED)
+        print_colored("\n[!] Install with: pip install -r requirements.txt", Colors.YELLOW)
         return False
     
-    print_colored("✅ All dependencies installed", Colors.GREEN)
+    print_colored("[OK] All dependencies installed", Colors.GREEN)
     return True
 
 def check_env_file():
     """Check if .env file exists"""
-    print_colored("\n🔍 Checking configuration...", Colors.BLUE)
+    print_colored("\n[?] Checking configuration...", Colors.BLUE)
     
     env_path = Path(__file__).parent / ".env"
     if not env_path.exists():
-        print_colored("❌ .env file not found", Colors.RED)
-        print_colored("💡 Copy .env.template to .env and configure API keys", Colors.YELLOW)
+        print_colored("[X] .env file not found", Colors.RED)
+        print_colored("[!] Copy .env.template to .env and configure API keys", Colors.YELLOW)
         return False
     
-    print_colored("✅ Configuration file found", Colors.GREEN)
+    print_colored("[OK] Configuration file found", Colors.GREEN)
     return True
 
 def start_backend(port=8000):
     """Start FastAPI backend server"""
-    print_colored(f"\n🚀 Starting FastAPI backend on port {port}...", Colors.BLUE)
+    print_colored(f"\n[>] Starting FastAPI backend on port {port}...", Colors.BLUE)
     
     # Start uvicorn in subprocess
     backend_process = subprocess.Popen(
@@ -110,17 +114,17 @@ def start_backend(port=8000):
     time.sleep(3)
     
     if backend_process.poll() is None:
-        print_colored(f"✅ Backend running at http://localhost:{port}", Colors.GREEN)
-        print_colored(f"📚 API docs at http://localhost:{port}/docs", Colors.GREEN)
+        print_colored(f"[OK] Backend running at http://localhost:{port}", Colors.GREEN)
+        print_colored(f"[i] API docs at http://localhost:{port}/docs", Colors.GREEN)
         return backend_process
     else:
-        print_colored("❌ Backend failed to start", Colors.RED)
+        print_colored("[X] Backend failed to start", Colors.RED)
         return None
 
 def shutdown_handler(processes):
     """Cleanup handler for Ctrl+C"""
     def handler(signum, frame):
-        print_colored("\n\n🛑 Shutting down servers...", Colors.YELLOW)
+        print_colored("\n\n[!] Shutting down servers...", Colors.YELLOW)
         for name, process in processes.items():
             if process and process.poll() is None:
                 print_colored(f"  Stopping {name}...", Colors.YELLOW)
@@ -129,7 +133,7 @@ def shutdown_handler(processes):
                     process.wait(timeout=5)
                 except subprocess.TimeoutExpired:
                     process.kill()
-        print_colored("✅ Shutdown complete", Colors.GREEN)
+        print_colored("[OK] Shutdown complete", Colors.GREEN)
         sys.exit(0)
     return handler
 
@@ -154,7 +158,7 @@ def main():
     # Start backend
     backend = start_backend(port=8000)
     if backend is None:
-        print_colored("\n❌ Failed to start backend. Check logs above.", Colors.RED)
+        print_colored("\n[X] Failed to start backend. Check logs above.", Colors.RED)
         sys.exit(1)
     processes['Backend'] = backend
     
@@ -163,13 +167,13 @@ def main():
     
     # Show status
     print_colored("\n" + "=" * 60, Colors.GREEN)
-    print_colored("✅ RAG SYSTEM RUNNING", Colors.GREEN + Colors.BOLD)
+    print_colored("[OK] RAG SYSTEM RUNNING", Colors.GREEN + Colors.BOLD)
     print_colored("=" * 60, Colors.GREEN)
-    print_colored("\n📍 Access Points:", Colors.BOLD)
-    print_colored("   🖥️  Basic HTML UI:  http://localhost:8000/", Colors.BLUE)
-    print_colored("   🔧 Backend API:    http://localhost:8000", Colors.BLUE)
-    print_colored("   📚 API Docs:       http://localhost:8000/docs", Colors.BLUE)
-    print_colored("\n⚠️  Press Ctrl+C to stop all servers\n", Colors.YELLOW)
+    print_colored("\n[i] Access Points:", Colors.BOLD)
+    print_colored("       Basic HTML UI:  http://localhost:8000/", Colors.BLUE)
+    print_colored("       Backend API:    http://localhost:8000", Colors.BLUE)
+    print_colored("       API Docs:       http://localhost:8000/docs", Colors.BLUE)
+    print_colored("\n[!]  Press Ctrl+C to stop all servers\n", Colors.YELLOW)
     print_colored("=" * 60, Colors.HEADER)
     
     # Monitor processes
@@ -177,10 +181,9 @@ def main():
         while True:
             time.sleep(1)
             
-            # Check if processes are still running
             for name, process in processes.items():
                 if process.poll() is not None:
-                    print_colored(f"\n❌ {name} stopped unexpectedly!", Colors.RED)
+                    print_colored(f"\n[X] {name} stopped unexpectedly!", Colors.RED)
                     # Kill other processes
                     for other_name, other_process in processes.items():
                         if other_name != name and other_process.poll() is None:

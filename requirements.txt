@@ -4,6 +4,7 @@ langchain-core
 langchain-community
 langchain-groq
 langchain-openai
+langchain-google-genai
 langchain-huggingface
 langchain-text-splitters
 faiss-cpu

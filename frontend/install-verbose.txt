@@ -1,0 +1,23 @@
+npm verbose cli C:\Program Files\nodejs\node.exe C:\Users\BAISAMPAYAN\AppData\Roaming\npm\node_modules\npm\bin\npm-cli.js
+npm info using npm@11.7.0
+npm info using node@v22.12.0
+npm verbose title npm install
+npm verbose argv "install" "--loglevel" "verbose"
+npm verbose logfile logs-max:10 dir:C:\Users\BAISAMPAYAN\AppData\Local\npm-cache\_logs\2026-03-26T20_52_46_187Z-
+npm verbose logfile C:\Users\BAISAMPAYAN\AppData\Local\npm-cache\_logs\2026-03-26T20_52_46_187Z-debug-0.log
+npm http cache https://registry.npmjs.org/react-is 59ms (cache hit)
+npm http cache react-is@https://registry.npmjs.org/react-is/-/react-is-19.2.4.tgz 0ms (cache hit)
+npm http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 504ms
+
+added 1 package, and audited 286 packages in 1s
+
+41 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm verbose cwd P:\Documind\frontend
+npm verbose os Windows_NT 10.0.26200
+npm verbose node v22.12.0
+npm verbose npm  v11.7.0
+npm verbose exit 0
+npm info ok

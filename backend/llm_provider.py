@@ -9,6 +9,16 @@ from .config import Config
 from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
 
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except Exception:  # pragma: no cover - optional dependency path
+    ChatGoogleGenerativeAI = None
+
+try:
+    from langchain_community.chat_models import ChatOllama
+except Exception:  # pragma: no cover - optional dependency path
+    ChatOllama = None
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -25,16 +35,22 @@ class LLMProvider:
 
     def __init__(self):
         self.providers = {}
-        # set environment variables only if needed (some SDKs read them)
+        self._sync_env_from_config()
+        self._init_providers()
+
+    def _sync_env_from_config(self):
+        """Expose provider keys to SDKs that read from process environment."""
         if Config.GROQ_API_KEY:
             os.environ["GROQ_API_KEY"] = Config.GROQ_API_KEY
-        # NOTE: do NOT map OPENROUTER_API_KEY to OPENAI_API_KEY to avoid collisions
         if Config.OPENROUTER_API_KEY:
             os.environ["OPENROUTER_API_KEY"] = Config.OPENROUTER_API_KEY
         if Config.OPENAI_API_KEY:
             os.environ["OPENAI_API_KEY"] = Config.OPENAI_API_KEY
-
-        self._init_providers()
+        if Config.GEMINI_API_KEY:
+            os.environ["GEMINI_API_KEY"] = Config.GEMINI_API_KEY
+            os.environ["GOOGLE_API_KEY"] = Config.GEMINI_API_KEY
+        if Config.OLLAMA_API_KEY:
+            os.environ["OLLAMA_API_KEY"] = Config.OLLAMA_API_KEY
 
     def _init_providers(self):
         # Groq
@@ -54,6 +70,7 @@ class LLMProvider:
                 self.providers["openrouter"] = ChatOpenAI(
                     model=Config.OPENROUTER_MODEL,
                     base_url="https://openrouter.ai/api/v1",
+                    api_key=Config.OPENROUTER_API_KEY,
                     temperature=0
                 )
                 logger.info("OpenRouter initialized: %s", Config.OPENROUTER_MODEL)
@@ -65,14 +82,49 @@ class LLMProvider:
             try:
                 self.providers["openai"] = ChatOpenAI(
                     model=Config.OPENAI_MODEL,
+                    api_key=Config.OPENAI_API_KEY,
                     temperature=0
                 )
                 logger.info("OpenAI initialized: %s", Config.OPENAI_MODEL)
             except Exception as e:
                 logger.warning("OpenAI init failed: %s", e)
 
+        # Gemini
+        if Config.GEMINI_API_KEY and ChatGoogleGenerativeAI is not None:
+            try:
+                self.providers["gemini"] = ChatGoogleGenerativeAI(
+                    model=Config.GEMINI_MODEL,
+                    google_api_key=Config.GEMINI_API_KEY,
+                    temperature=0
+                )
+                logger.info("Gemini initialized: %s", Config.GEMINI_MODEL)
+            except Exception as e:
+                logger.warning("Gemini init failed: %s", e)
+        elif Config.GEMINI_API_KEY and ChatGoogleGenerativeAI is None:
+            logger.info("Gemini key is set but langchain_google_genai is unavailable.")
+
+        # Ollama (local/self-hosted)
+        if ChatOllama is not None:
+            try:
+                self.providers["ollama"] = ChatOllama(
+                    model=Config.OLLAMA_MODEL,
+                    base_url=Config.OLLAMA_BASE_URL,
+                    temperature=0
+                )
+                logger.info("Ollama initialized: %s at %s", Config.OLLAMA_MODEL, Config.OLLAMA_BASE_URL)
+            except Exception as e:
+                logger.warning("Ollama init failed: %s", e)
+        else:
+            logger.info("ChatOllama not available from langchain_community; skipping Ollama provider.")
+
         if not self.providers:
             logger.warning("No LLM providers initialized. Check your config/API keys.")
+
+    def reload_providers(self):
+        """Rebuild provider clients after runtime config changes."""
+        self.providers = {}
+        self._sync_env_from_config()
+        self._init_providers()
 
     def get_llm(self, provider: Optional[str] = None):
         """

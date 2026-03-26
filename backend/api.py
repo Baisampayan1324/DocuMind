@@ -4,11 +4,13 @@ import shutil
 import tempfile
 import logging
 import hashlib
+import re
+import threading
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
-from pydantic import BaseModel
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 from pathlib import Path
 from datetime import datetime
 
@@ -63,75 +65,169 @@ class AuthResponse(BaseModel):
     user: Dict[str, Any]
     token: str
 
+
+class ProviderCredential(BaseModel):
+    provider: str
+    key: str = ""
+
+
+class ProviderSettingsUpdateRequest(BaseModel):
+    api_keys: List[ProviderCredential] = Field(default_factory=list)
+    provider_priority: List[str] = Field(default_factory=list)
+    models: Dict[str, str] = Field(default_factory=dict)
+    ollama_base_url: Optional[str] = None
+
+
+_ENV_WRITE_LOCK = threading.Lock()
+
+
+def _canonical_provider_name(raw_name: str) -> str:
+    normalized = (raw_name or "").strip().lower()
+    mapping = {
+        "groq": "groq",
+        "grok": "groq",
+        "openai": "openai",
+        "openrouter": "openrouter",
+        "gemini": "gemini",
+        "google": "gemini",
+        "google gemini": "gemini",
+        "ollama": "ollama",
+        "llama": "ollama",
+        "anthropic": "anthropic",
+        "claude": "anthropic"
+    }
+    return mapping.get(normalized, normalized)
+
+
+def _provider_key_env_name(provider: str) -> Optional[str]:
+    mapping = {
+        "groq": "GROQ_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY",
+        "openai": "OPENAI_API_KEY",
+        "gemini": "GEMINI_API_KEY",
+        "ollama": "OLLAMA_API_KEY",
+        "anthropic": "ANTHROPIC_API_KEY"
+    }
+    return mapping.get(provider)
+
+
+def _provider_model_env_name(provider: str) -> Optional[str]:
+    mapping = {
+        "groq": "GROQ_MODEL",
+        "openrouter": "OPENROUTER_MODEL",
+        "openai": "OPENAI_MODEL",
+        "gemini": "GEMINI_MODEL",
+        "ollama": "OLLAMA_MODEL"
+    }
+    return mapping.get(provider)
+
+
+def _update_env_file(env_updates: Dict[str, str]) -> Path:
+    root = Path(__file__).resolve().parent.parent
+    env_file = root / ".env"
+    existing_lines: List[str] = []
+    if env_file.exists():
+        existing_lines = env_file.read_text(encoding="utf-8").splitlines()
+
+    key_line_index: Dict[str, int] = {}
+    key_pattern = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=")
+    for idx, line in enumerate(existing_lines):
+        match = key_pattern.match(line)
+        if match:
+            key_line_index[match.group(1)] = idx
+
+    for key, value in env_updates.items():
+        safe_value = value.replace("\n", " ").strip()
+        rendered = f"{key}={safe_value}"
+        if key in key_line_index:
+            existing_lines[key_line_index[key]] = rendered
+        else:
+            existing_lines.append(rendered)
+
+    content = "\n".join(existing_lines).rstrip() + "\n"
+    env_file.write_text(content, encoding="utf-8")
+    return env_file
+
 def _hash_password(password: str) -> str:
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
 
 def _generate_token(email: str) -> str:
     return hashlib.sha256(f"{email}:{datetime.utcnow().isoformat()}".encode('utf-8')).hexdigest()
 
-@app.get("/", response_class=HTMLResponse, summary="Basic backend test page", tags=["admin"])
+
+@app.post("/settings/providers", summary="Update provider keys and models", tags=["admin"])
+def update_provider_settings(payload: ProviderSettingsUpdateRequest):
+    """
+    Dynamically update provider credentials/model config.
+    - Persists values to .env
+    - Updates process environment
+    - Reloads Config and provider clients at runtime
+    """
+    env_updates: Dict[str, str] = {}
+    updated_keys: List[str] = []
+
+    for item in payload.api_keys:
+        provider = _canonical_provider_name(item.provider)
+        env_name = _provider_key_env_name(provider)
+        if not env_name:
+            continue
+
+        if provider == "ollama" and item.key and item.key.startswith(("http://", "https://")):
+            env_updates["OLLAMA_BASE_URL"] = item.key.strip()
+            updated_keys.append("OLLAMA_BASE_URL")
+            continue
+
+        env_updates[env_name] = item.key.strip()
+        updated_keys.append(env_name)
+
+    if payload.ollama_base_url:
+        env_updates["OLLAMA_BASE_URL"] = payload.ollama_base_url.strip()
+        updated_keys.append("OLLAMA_BASE_URL")
+
+    for raw_provider, model_name in payload.models.items():
+        provider = _canonical_provider_name(raw_provider)
+        env_name = _provider_model_env_name(provider)
+        if not env_name:
+            continue
+        env_updates[env_name] = model_name.strip()
+        updated_keys.append(env_name)
+
+    if payload.provider_priority:
+        canonical_priority = [_canonical_provider_name(p) for p in payload.provider_priority]
+        canonical_priority = [p for p in canonical_priority if p]
+        env_updates["PROVIDER_PRIORITY"] = ",".join(canonical_priority)
+        updated_keys.append("PROVIDER_PRIORITY")
+
+    if not env_updates:
+        return {
+            "status": "no-op",
+            "message": "No supported provider settings found in payload",
+            "available_providers": list(RAG.llm_provider.providers.keys())
+        }
+
+    with _ENV_WRITE_LOCK:
+        env_file = _update_env_file(env_updates)
+        for key, value in env_updates.items():
+            os.environ[key] = value
+
+        Config.reload_from_env()
+        RAG.llm_provider.reload_providers()
+
+    return {
+        "status": "ok",
+        "updated": sorted(set(updated_keys)),
+        "env_file": str(env_file),
+        "available_providers": list(RAG.llm_provider.providers.keys()),
+        "provider_priority": Config.PROVIDER_PRIORITY
+    }
+
+@app.get("/", summary="Basic backend test page", tags=["admin"])
 def basic_test_page():
-        """Serve a minimal HTML page for testing backend health without a frontend app."""
-        return """
-<!doctype html>
-<html lang=\"en\">
-<head>
-    <meta charset=\"utf-8\" />
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-    <title>DocuMind Backend Test</title>
-    <style>
-        body { font-family: Segoe UI, Arial, sans-serif; margin: 0; background: #f3f6fb; color: #1b2533; }
-        .wrap { max-width: 760px; margin: 40px auto; background: #fff; border: 1px solid #d7e1ef; border-radius: 12px; padding: 20px; }
-        h1 { margin: 0 0 8px; }
-        p { margin: 0 0 14px; color: #4b5b73; }
-        label { display: block; margin: 10px 0 6px; font-weight: 600; }
-        input { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #c7d3e5; border-radius: 8px; }
-        button { margin-top: 14px; border: 0; border-radius: 8px; padding: 10px 14px; background: #0f5dd7; color: #fff; font-weight: 700; cursor: pointer; }
-        .out { margin-top: 14px; padding: 12px; border: 1px solid #d7e1ef; border-radius: 8px; background: #fbfdff; white-space: pre-wrap; }
-    </style>
-</head>
-<body>
-    <div class=\"wrap\">
-        <h1>Backend Test Page</h1>
-        <p>Use this basic HTML page to check if your backend endpoint is working.</p>
-
-        <label for=\"base\">Backend URL</label>
-        <input id=\"base\" value=\"http://localhost:8000\" />
-
-        <label for=\"path\">Path</label>
-        <input id=\"path\" value=\"/health\" />
-
-        <button id=\"run\" type=\"button\">Check</button>
-        <div id=\"out\" class=\"out\">No check performed yet.</div>
-    </div>
-
-    <script>
-        document.getElementById('run').addEventListener('click', async function () {
-            var base = document.getElementById('base').value.trim().replace(/\/+$/, '');
-            var path = document.getElementById('path').value.trim();
-            if (!path.startsWith('/')) path = '/' + path;
-            var url = base + path;
-            var out = document.getElementById('out');
-            var start = performance.now();
-            out.textContent = 'Checking ' + url + ' ...';
-
-            try {
-                var response = await fetch(url);
-                var body = await response.text();
-                var ms = Math.round(performance.now() - start);
-                out.textContent =
-                    'URL: ' + url + '\n' +
-                    'Status: ' + response.status + '\n' +
-                    'Latency: ' + ms + ' ms\n\n' +
-                    'Response:\n' + body;
-            } catch (err) {
-                out.textContent = 'Request failed: ' + err;
-            }
-        });
-    </script>
-</body>
-</html>
-        """
+    """Serve the built-in UI for upload, query, and performance checks."""
+    static_index = Path(__file__).resolve().parent / "static" / "index.html"
+    if not static_index.exists():
+        raise HTTPException(status_code=500, detail="UI file not found")
+    return FileResponse(path=str(static_index), media_type="text/html")
 
 @app.get("/health", summary="Health check", tags=["admin"])
 def health_check():

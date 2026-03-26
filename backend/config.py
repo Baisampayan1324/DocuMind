@@ -35,21 +35,30 @@ class Config:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")  # None if not set
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")  # None if not set
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Optional
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")  # Optional
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")  # Optional (stored for compatibility)
+    OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY")  # Optional (normally not required)
 
     # Models - Env override with defaults
     GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
     OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.3-8b-instruct:free")
     OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+    OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
     # Chunking (type-safe from env)
     CHUNK_SIZE = _get_int_env("CHUNK_SIZE", 1000)
     CHUNK_OVERLAP = _get_int_env("CHUNK_OVERLAP", 200)
 
     # Retrieval (type-safe)
-    TOP_K_CHUNKS = _get_int_env("TOP_K_CHUNKS", 4)
+    TOP_K_CHUNKS = _get_int_env("TOP_K_CHUNKS", _get_int_env("TOP_K", 4))
 
     # Embedding
-    EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+    EMBEDDING_MODEL = os.getenv(
+        "EMBEDDING_MODEL",
+        os.getenv("EMBEDDINGS_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+    )
 
     # FAISS index storage
     FAISS_PERSIST_DIR = os.getenv("FAISS_PERSIST_DIR", "data/faiss_index")
@@ -58,8 +67,35 @@ class Config:
     PERSIST_FAISS = os.getenv("PERSIST_FAISS", "false").lower() == "true"
 
     # Provider priority (comma-separated), e.g. "groq,openrouter,openai"
-    PROVIDER_PRIORITY = _parse_provider_priority(os.getenv("PROVIDER_PRIORITY", "groq,openrouter,openai"))
+    PROVIDER_PRIORITY = _parse_provider_priority(os.getenv("PROVIDER_PRIORITY", "groq,openrouter,openai,gemini,ollama"))
 
     # History database path
     HISTORY_DB_PATH = os.getenv("HISTORY_DB_PATH", "data/conversation_history.db")
+
+    @classmethod
+    def reload_from_env(cls):
+        """Reload runtime config values from process environment variables."""
+        cls.GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+        cls.OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+        cls.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        cls.GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+        cls.ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+        cls.OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY")
+
+        cls.GROQ_MODEL = os.getenv("GROQ_MODEL", cls.GROQ_MODEL)
+        cls.OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", cls.OPENROUTER_MODEL)
+        cls.OPENAI_MODEL = os.getenv("OPENAI_MODEL", cls.OPENAI_MODEL)
+        cls.GEMINI_MODEL = os.getenv("GEMINI_MODEL", cls.GEMINI_MODEL)
+        cls.OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", cls.OLLAMA_MODEL)
+        cls.OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", cls.OLLAMA_BASE_URL)
+
+        cls.CHUNK_SIZE = _get_int_env("CHUNK_SIZE", cls.CHUNK_SIZE)
+        cls.CHUNK_OVERLAP = _get_int_env("CHUNK_OVERLAP", cls.CHUNK_OVERLAP)
+        cls.TOP_K_CHUNKS = _get_int_env("TOP_K_CHUNKS", _get_int_env("TOP_K", cls.TOP_K_CHUNKS))
+
+        cls.EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", os.getenv("EMBEDDINGS_MODEL", cls.EMBEDDING_MODEL))
+        cls.FAISS_PERSIST_DIR = os.getenv("FAISS_PERSIST_DIR", cls.FAISS_PERSIST_DIR)
+        cls.PERSIST_FAISS = os.getenv("PERSIST_FAISS", str(cls.PERSIST_FAISS)).lower() == "true"
+        cls.PROVIDER_PRIORITY = _parse_provider_priority(os.getenv("PROVIDER_PRIORITY", "groq,openrouter,openai,gemini,ollama"))
+        cls.HISTORY_DB_PATH = os.getenv("HISTORY_DB_PATH", cls.HISTORY_DB_PATH)
 

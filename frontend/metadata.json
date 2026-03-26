@@ -1,0 +1,5 @@
+{
+  "name": "DocuMind",
+  "description": "The Modern Archivist - Chat with your documents intelligently using advanced AI.",
+  "requestFramePermissions": ["microphone"]
+}
