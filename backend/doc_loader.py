@@ -3,7 +3,10 @@ import re
 from pathlib import Path
 from typing import List, Dict, Optional
 from langchain_core.documents import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+try:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+except ImportError:
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
 import PyPDF2
 
 try:

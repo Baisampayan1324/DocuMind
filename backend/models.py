@@ -40,6 +40,24 @@ class Conversation(Base):
             'status': self.status
         }
 
+class User(Base):
+    """Simple user model for frontend auth"""
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    name = Column(String(120), nullable=False)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+
+    def to_dict(self) -> Dict:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'created_at': self.created_at.isoformat() if self.created_at is not None else None  # type: ignore
+        }
+
 # Database engine and session factory
 engine = create_engine(f'sqlite:///{Config.HISTORY_DB_PATH}', echo=False)
 SessionLocal = sessionmaker(bind=engine)
@@ -248,3 +266,46 @@ def search_conversations(search_term: str, limit: int = 50) -> List[Dict]:
     except Exception as e:
         print(f"Error searching conversations: {e}")
         return []
+
+def create_user(name: str, email: str, password_hash: str) -> Optional[Dict]:
+    """Create a user if email is not already taken"""
+    try:
+        db = SessionLocal()
+        existing = db.query(User).filter(User.email == email.lower()).first()
+        if existing:
+            db.close()
+            return None
+
+        user = User(
+            name=name.strip(),
+            email=email.lower().strip(),
+            password_hash=password_hash,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        result = user.to_dict()
+        db.close()
+        return result
+    except Exception as e:
+        print(f"Error creating user: {e}")
+        return None
+
+def authenticate_user(email: str, password_hash: str) -> Optional[Dict]:
+    """Authenticate a user by email + password hash"""
+    try:
+        db = SessionLocal()
+        user = db.query(User).filter(
+            User.email == email.lower().strip(),
+            User.password_hash == password_hash,
+        ).first()
+        if not user:
+            db.close()
+            return None
+
+        result = user.to_dict()
+        db.close()
+        return result
+    except Exception as e:
+        print(f"Error authenticating user: {e}")
+        return None

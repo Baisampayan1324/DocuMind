@@ -1,6 +1,6 @@
 """
 Unified Launcher for RAG System
-Starts both FastAPI backend and Streamlit frontend automatically
+Starts FastAPI backend with a basic built-in HTML test page
 """
 
 import subprocess
@@ -24,6 +24,25 @@ def print_colored(message, color):
     """Print colored message"""
     print(f"{color}{message}{Colors.ENDC}")
 
+def ensure_venv_python():
+    """Re-exec launcher with local .venv Python if available and not already active."""
+    root = Path(__file__).parent
+    if os.name == "nt":
+        venv_python = root / ".venv" / "Scripts" / "python.exe"
+    else:
+        venv_python = root / ".venv" / "bin" / "python"
+
+    if not venv_python.exists():
+        return
+
+    current_python = Path(sys.executable).resolve()
+    target_python = venv_python.resolve()
+    if current_python == target_python:
+        return
+
+    print_colored("\n🔁 Switching to project virtual environment (.venv)...", Colors.YELLOW)
+    os.execv(str(target_python), [str(target_python), str(Path(__file__).resolve())] + sys.argv[1:])
+
 def check_dependencies():
     """Check if required packages are installed"""
     print_colored("\n🔍 Checking dependencies...", Colors.BLUE)
@@ -32,7 +51,6 @@ def check_dependencies():
     packages = {
         'fastapi': 'fastapi',
         'uvicorn': 'uvicorn',
-        'streamlit': 'streamlit',
         'langchain-core': 'langchain_core',
         'python-dotenv': 'dotenv',
         'pydantic': 'pydantic'
@@ -99,35 +117,6 @@ def start_backend(port=8000):
         print_colored("❌ Backend failed to start", Colors.RED)
         return None
 
-def start_frontend(port=8501):
-    """Start Streamlit frontend"""
-    print_colored(f"\n🚀 Starting Streamlit frontend on port {port}...", Colors.BLUE)
-    
-    # Start streamlit in subprocess - using API client frontend
-    frontend_process = subprocess.Popen(
-        [
-            sys.executable, "-m", "streamlit",
-            "run", "frontend/app_api.py",
-            "--server.port", str(port),
-            "--server.headless", "true"
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True,
-        bufsize=1
-    )
-    
-    # Wait for frontend to start
-    print_colored("⏳ Waiting for frontend to initialize...", Colors.YELLOW)
-    time.sleep(5)
-    
-    if frontend_process.poll() is None:
-        print_colored(f"✅ Frontend running at http://localhost:{port}", Colors.GREEN)
-        return frontend_process
-    else:
-        print_colored("❌ Frontend failed to start", Colors.RED)
-        return None
-
 def shutdown_handler(processes):
     """Cleanup handler for Ctrl+C"""
     def handler(signum, frame):
@@ -146,6 +135,8 @@ def shutdown_handler(processes):
 
 def main():
     """Main launcher"""
+    ensure_venv_python()
+
     print_colored("=" * 60, Colors.HEADER)
     print_colored("DocuMind — AI RAG Chat System", Colors.HEADER + Colors.BOLD)
     print_colored("=" * 60, Colors.HEADER)
@@ -167,14 +158,6 @@ def main():
         sys.exit(1)
     processes['Backend'] = backend
     
-    # Start frontend
-    frontend = start_frontend(port=8501)
-    if frontend is None:
-        print_colored("\n❌ Failed to start frontend. Shutting down backend...", Colors.RED)
-        backend.terminate()
-        sys.exit(1)
-    processes['Frontend'] = frontend
-    
     # Setup shutdown handler
     signal.signal(signal.SIGINT, shutdown_handler(processes))
     
@@ -183,7 +166,7 @@ def main():
     print_colored("✅ RAG SYSTEM RUNNING", Colors.GREEN + Colors.BOLD)
     print_colored("=" * 60, Colors.GREEN)
     print_colored("\n📍 Access Points:", Colors.BOLD)
-    print_colored("   🖥️  Frontend UI:    http://localhost:8501", Colors.BLUE)
+    print_colored("   🖥️  Basic HTML UI:  http://localhost:8000/", Colors.BLUE)
     print_colored("   🔧 Backend API:    http://localhost:8000", Colors.BLUE)
     print_colored("   📚 API Docs:       http://localhost:8000/docs", Colors.BLUE)
     print_colored("\n⚠️  Press Ctrl+C to stop all servers\n", Colors.YELLOW)

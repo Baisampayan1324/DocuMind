@@ -1,4 +1,3 @@
-streamlit
 altair<5
 numpy<2.0.0
 langchain-core
@@ -6,6 +5,7 @@ langchain-community
 langchain-groq
 langchain-openai
 langchain-huggingface
+langchain-text-splitters
 faiss-cpu
 sentence-transformers>=3.0.0
 PyPDF2
@@ -21,3 +21,4 @@ pydantic
 sqlalchemy
 pandas
 requests
+python-multipart
