@@ -16,31 +16,27 @@ from datetime import datetime
 
 from .config import Config
 from .rag_engine import ConversationalRAG
-from . import models  # SQLAlchemy ORM models
+from . import models
 
 logger = logging.getLogger("backend.api")
 logger.setLevel(logging.INFO)
 
 app = FastAPI(title="AI Documind RAG API")
 
-# Allow CORS for local frontend testing; tighten in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # adjust to specific origins in prod
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Single RAG engine instance for the app
 RAG = ConversationalRAG()
 
-# Ensure DB exists on startup
 @app.on_event("startup")
 def startup_event():
     models.init_db()
     logger.info("History DB initialized")
-    # Create faiss dir if needed
     Path(Config.FAISS_PERSIST_DIR).mkdir(parents=True, exist_ok=True)
     logger.info("Backend startup complete.")
 
@@ -85,16 +81,11 @@ def _canonical_provider_name(raw_name: str) -> str:
     normalized = (raw_name or "").strip().lower()
     mapping = {
         "groq": "groq",
-        "grok": "groq",
         "openai": "openai",
         "openrouter": "openrouter",
         "gemini": "gemini",
-        "google": "gemini",
-        "google gemini": "gemini",
         "ollama": "ollama",
-        "llama": "ollama",
         "anthropic": "anthropic",
-        "claude": "anthropic"
     }
     return mapping.get(normalized, normalized)
 
