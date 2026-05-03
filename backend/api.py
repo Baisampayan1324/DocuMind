@@ -67,7 +67,6 @@ def startup_event():
 
 class AskRequest(BaseModel):
     question: str
-    provider: Optional[str] = None
 
 class AskResponse(BaseModel):
     answer: str
@@ -284,7 +283,7 @@ def ask(req: AskRequest):
     """
     start_time = time.time()
     try:
-        res = RAG.ask(req.question, provider=req.provider)
+        res = RAG.ask(req.question)
         # RAG.ask returns {"answer":..., "sources": [...], "meta": {...}}
         meta = res.get("meta") or {}
 
@@ -431,21 +430,6 @@ def list_uploaded_docs():
     except Exception as e:
         logger.exception("List docs failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to list uploaded documents")
-
-@app.get("/providers", summary="List available LLM providers", tags=["admin"])
-def list_providers():
-    """List all available and working LLM providers."""
-    try:
-        working = RAG.llm_provider.get_working_providers()
-        all_initialized = list(RAG.llm_provider.providers.keys())
-        return {
-            "working": working,
-            "all": all_initialized,
-            "preferred": RAG.llm_provider.get_preferred_provider()
-        }
-    except Exception as e:
-        logger.exception("List providers failed: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to list providers")
 
 @app.get("/documents/download", summary="Download uploaded document", tags=["docs"])
 def download_uploaded_doc(name: str = Query(..., min_length=1)):

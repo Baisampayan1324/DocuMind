@@ -122,7 +122,7 @@ class ConversationalRAG:
         # Save index if configured
         self._save_faiss_index()
 
-    def ask(self, question: str, provider: Optional[str] = None) -> Dict:
+    def ask(self, question: str) -> Dict:
         if not self.vectorstore:
             return {"answer": "No documents loaded.", "sources": []}
 
@@ -154,16 +154,8 @@ class ConversationalRAG:
 
         context = "\n\n".join(context_parts)
 
-        # Determine which providers to use
-        if provider:
-            if provider in self.llm_provider.providers:
-                working_providers = [provider]
-            else:
-                logger.warning(f"Requested provider '{provider}' not initialized. Falling back to priority list.")
-                working_providers = self.llm_provider.get_working_providers()
-        else:
-            # Get provider priority list of working providers
-            working_providers = self.llm_provider.get_working_providers()
+        # Get provider priority list of working providers
+        working_providers = self.llm_provider.get_working_providers()
 
         if not working_providers:
             # No working providers; return friendly message and log

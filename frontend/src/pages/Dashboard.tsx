@@ -6,7 +6,7 @@ import {
   Mic, X, Loader2, Plus, User, Bot, AlertTriangle,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { uploadFiles, askQuestion, AskResponse, fetchHistory, Conversation, fetchProviders } from '../lib/api';
+import { uploadFiles, askQuestion, AskResponse, fetchHistory, Conversation } from '../lib/api';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -41,25 +41,6 @@ export default function Dashboard() {
   const shouldKeepListeningRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [availableProviders, setAvailableProviders] = useState<{ working: string[]; all: string[]; preferred: string }>({ working: [], all: [], preferred: '' });
-  const [selectedProvider, setSelectedProvider] = useState<string>('');
-
-  useEffect(() => {
-    const loadProviders = async () => {
-      try {
-        const data = await fetchProviders();
-        setAvailableProviders(data);
-        if (data.preferred) {
-          setSelectedProvider(data.preferred);
-        } else if (data.working.length > 0) {
-          setSelectedProvider(data.working[0]);
-        }
-      } catch (e) {
-        console.error('Failed to load providers:', e);
-      }
-    };
-    loadProviders();
-  }, []);
 
   // Save messages to localStorage whenever they change
   useEffect(() => {
@@ -145,7 +126,7 @@ export default function Dashboard() {
 
       // 2. Ask question (only if there's text)
       if (q) {
-        const res = await askQuestion(q, selectedProvider || undefined);
+        const res = await askQuestion(q);
         const assistantMsg: ChatMessage = {
           role: 'assistant',
           content: res.answer,
@@ -438,26 +419,6 @@ export default function Dashboard() {
 
           {/* Input row */}
           <div className="flex items-center gap-2 md:gap-4 p-2 bg-white border border-[#3D1F10]/20 rounded-full shadow-sm focus-within:border-[#3D1F10]/40 focus-within:shadow-md transition-all">
-            {/* Provider Selector */}
-            <div className="relative group/provider px-2 border-r border-[#3D1F10]/10">
-              <select
-                value={selectedProvider}
-                onChange={(e) => setSelectedProvider(e.target.value)}
-                className="bg-transparent border-none text-[11px] font-bold text-primary focus:ring-0 cursor-pointer appearance-none pr-4 py-1"
-                title="Change API Provider"
-              >
-                <option value="">Auto (Priority)</option>
-                {availableProviders.all.map((p) => (
-                  <option key={p} value={p}>
-                    {p.charAt(0).toUpperCase() + p.slice(1)} {availableProviders.working.includes(p) ? '✅' : '❓'}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                <ArrowUp className="w-2.5 h-2.5 rotate-180" />
-              </div>
-            </div>
-
             <input
               type="file"
               ref={fileInputRef}
