@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
-import { fetchStats, fetchDocs, ConversationStats, UploadedDoc } from '../lib/api';
+import { fetchStats, fetchDocs, ConversationStats, UploadedDoc, isNetworkConnectivityError } from '../lib/api';
 
 const COLORS = ['#553722', '#6d5a50', '#d4c3ba', '#a08060', '#c09070'];
 
@@ -18,17 +18,20 @@ export default function Stats() {
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [networkError, setNetworkError] = useState(false);
   const [timeRange, setTimeRange] = useState('30');
 
   const load = async () => {
     setLoading(true);
     setError(null);
+    setNetworkError(false);
     try {
       const [s, d] = await Promise.all([fetchStats(), fetchDocs()]);
       setStats(s);
       setDocs(d.documents);
     } catch (e: any) {
-      setError(e.message || 'Cannot reach backend.');
+      setError(e.message || 'Failed to load stats.');
+      setNetworkError(isNetworkConnectivityError(e));
     } finally {
       setLoading(false);
     }
@@ -40,8 +43,8 @@ export default function Stats() {
 
   const totalDocs = docs.length;
   const totalConversations = stats?.total_conversations ?? 0;
-  const providers = stats?.providers ?? {};
-  const statuses = stats?.statuses ?? {};
+  const providers: ConversationStats['providers'] = stats?.providers ?? {};
+  const statuses: ConversationStats['statuses'] = stats?.statuses ?? {};
 
   // Provider bar chart data
   const providerData = Object.entries(providers).map(([name, v]) => ({
@@ -81,8 +84,13 @@ export default function Stats() {
     return (
       <div className="p-12 text-center">
         <AlertTriangle className="w-10 h-10 text-error mx-auto mb-3" />
-        <p className="font-bold text-error mb-1">Backend not reachable</p>
-        <p className="text-sm text-on-surface-variant mb-4">{error}</p>
+        <p className="font-bold text-primary mb-1">{networkError ? 'Backend is not reachable' : 'Unable to load stats'}</p>
+        <p className="text-sm text-on-surface-variant mb-4">
+          {networkError
+            ? 'Make sure the backend server is running on port 8000.'
+            : 'Try refreshing the page or contact support if the issue persists.'
+          }
+        </p>
         <button onClick={load} className="px-5 py-2 bg-primary text-on-primary rounded-xl font-bold text-sm flex items-center gap-2 mx-auto">
           <RefreshCw className="w-4 h-4" /> Retry
         </button>

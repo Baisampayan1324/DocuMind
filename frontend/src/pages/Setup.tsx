@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Cpu, Key, ArrowRight, Sparkles, Check, AlertTriangle } from 'lucide-react';
@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import { GridBackground } from '../components/GridBackground';
 import { AmbientGlow } from '../components/AmbientGlow';
 import { updateProviders, healthCheck } from '../lib/api';
+import { getStoredApiKeys, isSetupComplete, markSetupComplete } from '../lib/setupState';
 
 const models = [
   { name: 'GPT-4o', label: 'Recommended', provider: 'OpenAI', hint: 'Get your key at platform.openai.com' },
@@ -22,6 +23,25 @@ export default function Setup() {
   const [apiKey, setApiKey] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isSetupComplete()) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+
+    const savedModel = localStorage.getItem('documind_active_model');
+    const savedApiKeys = getStoredApiKeys();
+
+    if (savedModel) {
+      const found = models.find((m) => m.name === savedModel);
+      if (found) {
+        setSelectedModel(found);
+        const existingKey = savedApiKeys.find((k) => k.provider === found.provider)?.key;
+        if (existingKey) setApiKey(existingKey);
+      }
+    }
+  }, [navigate]);
 
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,9 +73,9 @@ export default function Setup() {
         { id: Date.now().toString(), provider: selectedModel.provider, key: keyValue },
       ]));
       localStorage.setItem('documind_active_model', selectedModel.name);
-      localStorage.setItem('documind_setup_done', 'true');
+      markSetupComplete();
 
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (e: any) {
       setError(e.message || 'Could not connect to backend. Make sure the server is running.');
     } finally {
@@ -80,7 +100,7 @@ export default function Setup() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-primary tracking-tight">Welcome to DocuMind</h1>
-              <p className="text-on-surface-variant font-medium">Let's configure your AI archivist.</p>
+              <p className="text-on-surface-variant font-medium">Provide your API key to get started.</p>
             </div>
           </div>
 

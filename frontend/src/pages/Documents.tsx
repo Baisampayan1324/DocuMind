@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { fetchDocs, downloadDocUrl, UploadedDoc } from '../lib/api';
+import { fetchDocs, downloadDocUrl, UploadedDoc, isNetworkConnectivityError } from '../lib/api';
 
 export default function Documents() {
   const navigate = useNavigate();
@@ -21,15 +21,18 @@ export default function Documents() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [networkError, setNetworkError] = useState(false);
 
   const load = async () => {
     setLoading(true);
     setError(null);
+    setNetworkError(false);
     try {
       const res = await fetchDocs();
       setDocuments(res.documents);
     } catch (e: any) {
-      setError(e.message || 'Cannot reach backend.');
+      setError(e.message || 'Failed to load documents.');
+      setNetworkError(isNetworkConnectivityError(e));
     } finally {
       setLoading(false);
     }
@@ -156,8 +159,13 @@ export default function Documents() {
       ) : error ? (
         <div className="text-center py-20 bg-surface-container-low rounded-2xl border border-dashed border-outline-variant/30">
           <AlertTriangle className="w-10 h-10 text-error mx-auto mb-3" />
-          <p className="font-bold text-error mb-1">Backend not reachable</p>
-          <p className="text-sm text-outline mb-4">{error}</p>
+          <p className="font-bold text-primary mb-1">{networkError ? 'Backend is not reachable' : 'Unable to load documents'}</p>
+          <p className="text-sm text-on-surface-variant mb-4">
+            {networkError
+              ? 'Make sure the backend server is running on port 8000.'
+              : 'Try refreshing the page or contact support if the issue persists.'
+            }
+          </p>
           <button onClick={load} className="px-5 py-2 bg-primary text-on-primary rounded-xl font-bold text-sm flex items-center gap-2 mx-auto">
             <RefreshCw className="w-4 h-4" /> Retry
           </button>

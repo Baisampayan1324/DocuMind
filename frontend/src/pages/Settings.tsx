@@ -17,6 +17,7 @@ import { useTheme } from '../context/ThemeContext';
 import { clearChatHistory } from '../lib/chatStorage';
 import { clearLibrary } from '../lib/documentStorage';
 import { updateProviders, clearAll as clearAllBackend } from '../lib/api';
+import { markSetupComplete } from '../lib/setupState';
 
 export default function Settings() {
   const { theme, setTheme, fontSize, setFontSize, fontStyle, setFontStyle } = useTheme();
@@ -33,9 +34,13 @@ export default function Settings() {
   const [tempKey, setTempKey] = useState('');
   const [apiKeys, setApiKeys] = useState<{id: string, provider: string, key: string}[]>(() => {
     const saved = localStorage.getItem('documind_api_keys');
-    return saved ? JSON.parse(saved) : [
-      { id: '1', provider: 'OpenAI', key: 'sk-proj-••••••••••••••••' }
-    ];
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
   });
 
   useEffect(() => {
@@ -72,18 +77,28 @@ export default function Settings() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleCreateApi = () => {
+  const handleCreateApi = async () => {
     setIsCreatingApi(true);
-    setTimeout(() => {
-      setIsCreatingApi(false);
-      setShowCreateApiModal(false);
-      const newKeyObj = { id: Date.now().toString(), provider: newProvider || 'Custom', key: newApiKey };
+    const providerName = newProvider || 'Custom';
+    const newKeyObj = { id: Date.now().toString(), provider: providerName, key: newApiKey };
+
+    try {
+      await updateProviders({
+        api_keys: [{ provider: providerName, key: newApiKey }],
+        provider_priority: [providerName.toLowerCase().replace(/ /g, '')],
+      });
+      markSetupComplete();
+      setNotification('API key created and synced to backend.');
+    } catch {
+      setNotification('API key saved locally (backend offline).');
+    } finally {
       setApiKeys([...apiKeys, newKeyObj]);
       setNewApiKey('');
       setNewProvider('');
-      setNotification('API Key created and integrated successfully.');
+      setIsCreatingApi(false);
+      setShowCreateApiModal(false);
       setTimeout(() => setNotification(null), 3000);
-    }, 2000);
+    }
   };
 
   const handleModelCardClick = (model: any) => {
@@ -114,6 +129,7 @@ export default function Settings() {
         api_keys: [{ provider: currentModel.provider, key: tempKey }],
         provider_priority: [currentModel.provider.toLowerCase().replace(/ /g, '')],
       });
+      markSetupComplete();
       setNotification(`${currentModel.name} configured and pushed to backend.`);
     } catch {
       setNotification(`${currentModel.name} saved locally (backend offline).`);
@@ -264,7 +280,8 @@ export default function Settings() {
                         <option value="Google Gemini">Google Gemini</option>
                         <option value="Groq">Groq</option>
                         <option value="OpenRouter">OpenRouter</option>
-                        <option value="Custom">Custom</option>
+                        <option value="Ollama">Ollama</option>
+      <option value="Custom">Custom</option>
                       </select>
                     </div>
 

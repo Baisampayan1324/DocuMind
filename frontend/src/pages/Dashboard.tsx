@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useSearchParams } from 'react-router-dom';
 import {
   BookOpen, FileText, Paperclip, ArrowUp,
   Mic, X, Loader2, Plus, User, Bot, AlertTriangle,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { uploadFiles, askQuestion, AskResponse } from '../lib/api';
+import { uploadFiles, askQuestion, AskResponse, fetchHistory, Conversation, fetchProviders } from '../lib/api';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -13,21 +14,94 @@ interface ChatMessage {
   sources?: AskResponse['sources'];
   provider?: string;
   duration_s?: number;
+  tokens_used?: number;
   timestamp: number;
 }
 
 export default function Dashboard() {
+  const [searchParams] = useSearchParams();
+  const historyId = searchParams.get('historyId');
+
   const [message, setMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    // Load from localStorage on init
+    if (historyId) return []; // Don't load from localStorage if viewing history
+    const saved = localStorage.getItem('documind_chat_messages');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [continueHistoryId, setContinueHistoryId] = useState<number | null>(
+    historyId ? parseInt(historyId) : null
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const shouldKeepListeningRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [availableProviders, setAvailableProviders] = useState<{ working: string[]; all: string[]; preferred: string }>({ working: [], all: [], preferred: '' });
+  const [selectedProvider, setSelectedProvider] = useState<string>('');
+
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        const data = await fetchProviders();
+        setAvailableProviders(data);
+        if (data.preferred) {
+          setSelectedProvider(data.preferred);
+        } else if (data.working.length > 0) {
+          setSelectedProvider(data.working[0]);
+        }
+      } catch (e) {
+        console.error('Failed to load providers:', e);
+      }
+    };
+    loadProviders();
+  }, []);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (!historyId && !continueHistoryId) {
+      localStorage.setItem('documind_chat_messages', JSON.stringify(messages));
+    }
+  }, [messages, historyId, continueHistoryId]);
+
+  // Load history item if historyId is present
+  useEffect(() => {
+    if (historyId) {
+      loadHistoryItem(parseInt(historyId));
+    }
+  }, [historyId]);
+
+  const loadHistoryItem = async (id: number) => {
+    try {
+      const history = await fetchHistory();
+      const item = history.find((h) => h.id === id);
+      if (item) {
+        // Display the historical conversation
+        setMessages([
+          {
+            role: 'user',
+            content: item.question,
+            timestamp: new Date(item.timestamp).getTime(),
+          },
+          {
+            role: 'assistant',
+            content: item.answer,
+            sources: item.sources,
+            provider: item.provider,
+            duration_s: item.duration_s,
+            timestamp: new Date(item.timestamp).getTime(),
+          },
+        ]);
+        setContinueHistoryId(id);
+      }
+    } catch (e: any) {
+      console.error('Failed to load history item:', e);
+    }
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -71,13 +145,14 @@ export default function Dashboard() {
 
       // 2. Ask question (only if there's text)
       if (q) {
-        const res = await askQuestion(q);
+        const res = await askQuestion(q, selectedProvider || undefined);
         const assistantMsg: ChatMessage = {
           role: 'assistant',
           content: res.answer,
           sources: res.sources,
           provider: res.meta?.provider,
           duration_s: res.meta?.duration_s,
+          tokens_used: res.tokens_used,
           timestamp: Date.now(),
         };
         setMessages((prev) => [...prev, assistantMsg]);
@@ -212,6 +287,31 @@ export default function Dashboard() {
           </motion.div>
         ) : (
           <div className="max-w-4xl mx-auto w-full space-y-6">
+            {/* Continuing historical conversation banner */}
+            {continueHistoryId && (
+              <motion.div
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                  <p className="text-sm font-bold text-primary">Continuing from conversation #{continueHistoryId}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setMessages([]);
+                    setContinueHistoryId(null);
+                    localStorage.removeItem('documind_chat_messages');
+                    window.history.replaceState({}, '', '/dashboard');
+                  }}
+                  className="text-xs font-bold text-primary/80 hover:text-primary bg-white/10 px-3 py-1 rounded-lg transition-all"
+                >
+                  Start New Chat
+                </button>
+              </motion.div>
+            )}
+            
             {messages.map((msg, i) => (
               <motion.div
                 key={i}
@@ -245,14 +345,25 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {/* Provider + time */}
-                  {msg.provider && (
-                    <div className="flex items-center gap-2">
-                      <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide', providerColor(msg.provider))}>
-                        {msg.provider.replace('fusion:', '⚡ ')}
-                      </span>
+                  {/* Provider + time + tokens */}
+                  {(msg.provider || msg.tokens_used) && (
+                    <div className="flex items-center gap-2 mt-2">
+                      {msg.provider && (
+                        <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide', providerColor(msg.provider))}>
+                          {msg.provider.replace('fusion:', '⚡ ')}
+                        </span>
+                      )}
                       {msg.duration_s && (
-                        <span className="text-[9px] text-outline">{msg.duration_s.toFixed(1)}s</span>
+                        <span className="text-[9px] text-outline flex items-center gap-1">
+                          <span>⏱️</span>
+                          {msg.duration_s.toFixed(1)}s
+                        </span>
+                      )}
+                      {msg.tokens_used !== undefined && msg.tokens_used > 0 && (
+                        <span className="text-[9px] text-outline flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded-full border border-outline-variant/20">
+                          <span>🔤</span>
+                          {msg.tokens_used} tokens
+                        </span>
                       )}
                     </div>
                   )}
@@ -327,6 +438,26 @@ export default function Dashboard() {
 
           {/* Input row */}
           <div className="flex items-center gap-2 md:gap-4 p-2 bg-white border border-[#3D1F10]/20 rounded-full shadow-sm focus-within:border-[#3D1F10]/40 focus-within:shadow-md transition-all">
+            {/* Provider Selector */}
+            <div className="relative group/provider px-2 border-r border-[#3D1F10]/10">
+              <select
+                value={selectedProvider}
+                onChange={(e) => setSelectedProvider(e.target.value)}
+                className="bg-transparent border-none text-[11px] font-bold text-primary focus:ring-0 cursor-pointer appearance-none pr-4 py-1"
+                title="Change API Provider"
+              >
+                <option value="">Auto (Priority)</option>
+                {availableProviders.all.map((p) => (
+                  <option key={p} value={p}>
+                    {p.charAt(0).toUpperCase() + p.slice(1)} {availableProviders.working.includes(p) ? '✅' : '❓'}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
+                <ArrowUp className="w-2.5 h-2.5 rotate-180" />
+              </div>
+            </div>
+
             <input
               type="file"
               ref={fileInputRef}

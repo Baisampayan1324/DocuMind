@@ -11,7 +11,6 @@ interface UserInfo {
 interface UserContextType {
   user: UserInfo;
   updateUser: (updates: Partial<UserInfo>) => void;
-  connectGmail: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -20,11 +19,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserInfo>(() => {
     const saved = localStorage.getItem('documind-user');
     return saved ? JSON.parse(saved) : {
-      name: 'Julian V.',
-      email: 'julian.v@archivist.ai',
-      timezone: 'UTC-7 (Pacific Time)',
+      name: 'User',
+      email: '',
+      timezone: 'UTC',
       profileImage: 'https://picsum.photos/seed/user/200',
-      plan: 'Pro Plan'
+      plan: 'Free Plan'
     };
   });
 
@@ -36,16 +35,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setUser(prev => ({ ...prev, ...updates }));
   };
 
-  const connectGmail = () => {
-    // Simulate Gmail connection
-    updateUser({
-      email: 'julian.v@gmail.com',
-      timezone: 'UTC-5 (Eastern Time)'
-    });
-  };
-
   return (
-    <UserContext.Provider value={{ user, updateUser, connectGmail }}>
+    <UserContext.Provider value={{ user, updateUser }}>
       {children}
     </UserContext.Provider>
   );

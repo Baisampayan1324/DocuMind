@@ -3,19 +3,21 @@ import { History as HistoryIcon, MessageSquare, Clock, ArrowRight, Trash2, Alert
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
-import { fetchHistory, searchConversations, Conversation } from '../lib/api';
+import { fetchHistory, searchConversations, Conversation, isNetworkConnectivityError } from '../lib/api';
 
 export default function History() {
   const navigate = useNavigate();
   const [chats, setChats] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [networkError, setNetworkError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState('all');
 
   const load = async (query = '') => {
     setLoading(true);
     setError(null);
+    setNetworkError(false);
     try {
       if (query.trim()) {
         const res = await searchConversations(query);
@@ -25,7 +27,8 @@ export default function History() {
         setChats(data);
       }
     } catch (e: any) {
-      setError(e.message || 'Cannot reach backend.');
+      setError(e.message || 'Failed to load history.');
+      setNetworkError(isNetworkConnectivityError(e));
     } finally {
       setLoading(false);
     }
@@ -126,8 +129,16 @@ export default function History() {
       ) : error ? (
         <div className="text-center py-16 bg-surface-container-low rounded-2xl border border-dashed border-outline-variant/30">
           <AlertTriangle className="w-8 h-8 text-error mx-auto mb-2" />
-          <p className="font-bold text-error text-sm mb-1">Backend not reachable</p>
-          <p className="text-xs text-outline">{error}</p>
+          <p className="font-bold text-primary text-sm mb-1">{networkError ? 'Backend is not reachable' : 'Unable to load history'}</p>
+          <p className="text-xs text-on-surface-variant mb-4">
+            {networkError
+              ? 'Make sure the backend server is running on port 8000.'
+              : 'Try refreshing the page or contact support if the issue persists.'
+            }
+          </p>
+          <button onClick={() => load(searchQuery)} className="px-4 py-2 bg-primary text-on-primary rounded-xl font-bold text-xs flex items-center gap-2 mx-auto">
+            <RefreshCw className="w-3 h-3" /> Retry
+          </button>
         </div>
       ) : (
         <div className="space-y-4">

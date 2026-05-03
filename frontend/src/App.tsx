@@ -18,21 +18,39 @@ import History from './pages/History';
 import Help from './pages/Help';
 import { DashboardLayout } from './components/DashboardLayout';
 import { Tour } from './components/Tour';
+import { isSetupComplete } from './lib/setupState';
+
+function RequireSetup({ children }: { children: React.ReactElement }) {
+  return isSetupComplete() ? children : <Navigate to="/setup" replace />;
+}
+
+function SetupRoute() {
+  return isSetupComplete() ? <Navigate to="/dashboard" replace /> : <Setup />;
+}
 
 export default function App() {
   return (
     <Router>
       <Tour />
       <Routes>
-        {/* Public Routes */}
+        {/* Home - show landing page first */}
         <Route path="/" element={<LandingPage />} />
+        
+        {/* Public Routes */}
+        <Route path="/landing" element={<LandingPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/setup" element={<Setup />} />
+        <Route path="/setup" element={<SetupRoute />} />
 
         {/* Dashboard Routes with Sidebar */}
-        <Route element={<DashboardLayout />}>
+        <Route
+          element={(
+            <RequireSetup>
+              <DashboardLayout />
+            </RequireSetup>
+          )}
+        >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/stats" element={<Stats />} />

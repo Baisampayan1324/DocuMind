@@ -166,7 +166,7 @@ class LLMProvider:
         """
         try:
             if provider not in self.providers:
-                logger.debug("Provider %s not initialized", provider)
+                logger.debug("Provider %s not initialized (no API key or init failed)", provider)
                 return False
             llm = self.providers[provider]
 
@@ -176,15 +176,25 @@ class LLMProvider:
                 response = llm.invoke([HumanMessage(content="Please respond with OK if you are working.")])
                 # response may be an object with .content or a raw string
                 text = getattr(response, "content", str(response))
-                return "ok" in text.lower() or bool(text.strip())
-            except Exception:
+                success = "ok" in text.lower() or bool(text.strip())
+                if not success:
+                    logger.warning("Provider %s responded but output was empty/unexpected.", provider)
+                return success
+            except Exception as e:
                 # fallback to raw invoke with string if message API not available
                 resp = llm.invoke("Please respond with OK if you are working.")
                 text = getattr(resp, "content", str(resp))
                 return "ok" in text.lower() or bool(text.strip())
 
         except Exception as e:
-            logger.warning("Provider %s health check failed: %s", provider, e)
+            error_msg = str(e)
+            # Log specific common errors to help user
+            if "401" in error_msg or "403" in error_msg:
+                logger.warning("Provider %s health check failed: Authentication error (check API key)", provider)
+            elif "429" in error_msg:
+                logger.warning("Provider %s health check failed: Rate limit exceeded", provider)
+            else:
+                logger.warning("Provider %s health check failed: %s", provider, error_msg)
             return False
 
     def get_working_providers(self) -> List[str]:

@@ -10,8 +10,11 @@ import { ChatAnimation } from '../components/ChatAnimation';
 import { BentoFeatures } from '../components/BentoFeatures';
 import { GridBackground } from '../components/GridBackground';
 import { AmbientGlow } from '../components/AmbientGlow';
+import { isSetupComplete } from '../lib/setupState';
 
 export default function LandingPage() {
+  const getStartedPath = isSetupComplete() ? '/dashboard' : '/setup';
+
   return (
     <div className="min-h-screen bg-background relative">
       <GridBackground />
@@ -47,7 +50,7 @@ export default function LandingPage() {
           </motion.p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-            <MagneticButton to="/setup">
+            <MagneticButton to={getStartedPath}>
               <div className="crema-gradient text-on-primary px-10 py-5 rounded-2xl font-bold text-xl shadow-2xl hover:shadow-primary/20 transition-all active:scale-95 flex items-center gap-2">
                 Start for free
                 <ArrowRight className="w-5 h-5" />
@@ -101,7 +104,7 @@ export default function LandingPage() {
                 Join 2,000+ researchers, lawyers, and analysts who are saving 10+ hours a week with DocuMind.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link to="/setup" className="bg-surface text-primary px-10 py-4 rounded-xl font-bold text-lg hover:bg-surface-bright transition-all active:scale-95 shadow-xl">
+                <Link to={getStartedPath} className="bg-surface text-primary px-10 py-4 rounded-xl font-bold text-lg hover:bg-surface-bright transition-all active:scale-95 shadow-xl">
                   Get Started Now
                 </Link>
                 <span className="text-sm font-medium opacity-80">No credit card required.</span>
@@ -127,7 +130,7 @@ export default function LandingPage() {
               <h4 className="font-bold text-primary mb-6 uppercase tracking-widest text-xs">Product</h4>
               <ul className="space-y-4">
                 <li><a href="#features" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Features</a></li>
-                <li><Link to="/setup" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Get Started</Link></li>
+                <li><Link to={getStartedPath} className="text-sm text-on-surface-variant hover:text-primary transition-colors">Get Started</Link></li>
               </ul>
             </div>
             <div>

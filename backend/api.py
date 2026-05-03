@@ -6,6 +6,7 @@ import logging
 import hashlib
 import re
 import threading
+import time
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +14,12 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from pathlib import Path
 from datetime import datetime
+
+# Token counting
+try:
+    import tiktoken
+except ImportError:
+    tiktoken = None
 
 from .config import Config
 from .rag_engine import ConversationalRAG
@@ -33,6 +40,24 @@ app.add_middleware(
 
 RAG = ConversationalRAG()
 
+# ─── Token Counting Helper ───────────────────────────────────────────
+
+def count_tokens(text: str, model: str = "gpt-3.5-turbo") -> int:
+    """
+    Count tokens in text using tiktoken
+    Falls back to rough estimation if tiktoken unavailable
+    """
+    if not tiktoken:
+        # Rough estimation: 1 token ≈ 4 chars
+        return len(text) // 4
+    
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+        return len(encoding.encode(text))
+    except Exception:
+        # Fallback to rough estimate
+        return len(text) // 4
+
 @app.on_event("startup")
 def startup_event():
     models.init_db()
@@ -42,24 +67,19 @@ def startup_event():
 
 class AskRequest(BaseModel):
     question: str
+    provider: Optional[str] = None
 
 class AskResponse(BaseModel):
     answer: str
     sources: List[Dict]
     meta: Dict[str, Any]
+    tokens_used: int = 0
 
-class SignupRequest(BaseModel):
-    name: str
-    email: str
-    password: str
 
-class SigninRequest(BaseModel):
-    email: str
-    password: str
-
-class AuthResponse(BaseModel):
-    user: Dict[str, Any]
-    token: str
+class ConversationStatsResponse(BaseModel):
+    total_conversations: int
+    providers: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    statuses: Dict[str, int] = Field(default_factory=dict)
 
 
 class ProviderCredential(BaseModel):
@@ -138,12 +158,6 @@ def _update_env_file(env_updates: Dict[str, str]) -> Path:
     content = "\n".join(existing_lines).rstrip() + "\n"
     env_file.write_text(content, encoding="utf-8")
     return env_file
-
-def _hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
-
-def _generate_token(email: str) -> str:
-    return hashlib.sha256(f"{email}:{datetime.utcnow().isoformat()}".encode('utf-8')).hexdigest()
 
 
 @app.post("/settings/providers", summary="Update provider keys and models", tags=["admin"])
@@ -262,65 +276,51 @@ async def upload(files: List[UploadFile] = File(...)):
         logger.exception("Upload failed: %s", e)
         raise HTTPException(status_code=500, detail="File upload/indexing failed")
 
-@app.post("/auth/signup", response_model=AuthResponse, summary="Create user account", tags=["auth"])
-def auth_signup(req: SignupRequest):
-    if not req.name.strip() or not req.email.strip() or not req.password.strip():
-        raise HTTPException(status_code=400, detail="Name, email and password are required")
-
-    if len(req.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-
-    password_hash = _hash_password(req.password)
-    created_user = models.create_user(req.name, req.email, password_hash)
-    if not created_user:
-        raise HTTPException(status_code=409, detail="Email is already registered")
-
-    return {
-        "user": created_user,
-        "token": _generate_token(created_user['email'])
-    }
-
-@app.post("/auth/signin", response_model=AuthResponse, summary="Sign in user", tags=["auth"])
-def auth_signin(req: SigninRequest):
-    if not req.email.strip() or not req.password.strip():
-        raise HTTPException(status_code=400, detail="Email and password are required")
-
-    password_hash = _hash_password(req.password)
-    user = models.authenticate_user(req.email, password_hash)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    return {
-        "user": user,
-        "token": _generate_token(user['email'])
-    }
-
 @app.post("/ask", response_model=AskResponse, summary="Ask a question of the indexed documents", tags=["query"])
 def ask(req: AskRequest):
     """
-    Ask a question. Returns answer, sources and metadata (provider, time).
+    Ask a question. Returns answer, sources, metadata, and token count.
     The result is saved into the conversation history DB automatically.
     """
+    start_time = time.time()
     try:
-        res = RAG.ask(req.question)
+        res = RAG.ask(req.question, provider=req.provider)
         # RAG.ask returns {"answer":..., "sources": [...], "meta": {...}}
         meta = res.get("meta") or {}
-        
+
+        # Count tokens for question + answer
+        question_tokens = count_tokens(req.question)
+        answer_tokens = count_tokens(res.get("answer", ""))
+        total_tokens = question_tokens + answer_tokens
+
+        # Calculate actual elapsed time
+        elapsed_time = time.time() - start_time
+        meta["duration_s"] = elapsed_time
+
+        # Clean up source filenames: remove "temp_" prefix for display
+        cleaned_sources = []
+        for src in res.get("sources", []):
+            cleaned_src = dict(src)
+            if "source" in cleaned_src and cleaned_src["source"].startswith("temp_"):
+                cleaned_src["source"] = cleaned_src["source"].replace("temp_", "", 1)
+            cleaned_sources.append(cleaned_src)
+
         # Save to database using ORM
         models.save_conversation(
             question=req.question,
             answer=res.get("answer", ""),
-            sources=res.get("sources", []),
+            sources=cleaned_sources,
             provider=meta.get("provider", "unknown"),
-            duration_s=meta.get("duration_s", 0.0),
+            duration_s=elapsed_time,
             status=meta.get("status", "success")
         )
-        
-        return {
-            "answer": res.get("answer", ""),
-            "sources": res.get("sources", []),
-            "meta": meta
-        }
+
+        return AskResponse(
+            answer=res.get("answer", ""),
+            sources=cleaned_sources,
+            meta=meta,
+            tokens_used=total_tokens
+        )
     except Exception as e:
         logger.exception("Ask failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to generate answer")
@@ -375,15 +375,24 @@ def get_history(
         logger.exception("History fetch failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to read history")
 
-@app.get("/stats", summary="Get conversation statistics", tags=["analytics"])
+@app.get("/stats", response_model=ConversationStatsResponse, summary="Get conversation statistics", tags=["analytics"])
 def get_stats():
     """Get analytics and statistics about conversations"""
     try:
         stats = models.get_conversation_stats()
-        return stats
+        return ConversationStatsResponse(
+            total_conversations=stats.get('total_conversations', 0),
+            providers=stats.get('providers', {}),
+            statuses=stats.get('statuses', {})
+        )
     except Exception as e:
         logger.exception("Stats fetch failed: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to get stats")
+        # Return empty stats instead of error to prevent JSON parsing issues
+        return ConversationStatsResponse(
+            total_conversations=0,
+            providers={},
+            statuses={}
+        )
 
 @app.get("/search", summary="Search conversations", tags=["admin"])
 def search_conversations(q: str = Query(..., min_length=1), limit: int = Query(50, ge=1, le=500)):
@@ -401,7 +410,7 @@ def search_conversations(q: str = Query(..., min_length=1), limit: int = Query(5
         logger.exception("Search failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to search")
 
-@app.get("/docs", summary="List uploaded documents", tags=["docs"])
+@app.get("/documents", summary="List uploaded documents", tags=["docs"])
 def list_uploaded_docs():
     """List files previously uploaded and stored as temp_* in app working directory."""
     try:
@@ -423,7 +432,22 @@ def list_uploaded_docs():
         logger.exception("List docs failed: %s", e)
         raise HTTPException(status_code=500, detail="Failed to list uploaded documents")
 
-@app.get("/docs/download", summary="Download uploaded document", tags=["docs"])
+@app.get("/providers", summary="List available LLM providers", tags=["admin"])
+def list_providers():
+    """List all available and working LLM providers."""
+    try:
+        working = RAG.llm_provider.get_working_providers()
+        all_initialized = list(RAG.llm_provider.providers.keys())
+        return {
+            "working": working,
+            "all": all_initialized,
+            "preferred": RAG.llm_provider.get_preferred_provider()
+        }
+    except Exception as e:
+        logger.exception("List providers failed: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to list providers")
+
+@app.get("/documents/download", summary="Download uploaded document", tags=["docs"])
 def download_uploaded_doc(name: str = Query(..., min_length=1)):
     """Download a previously uploaded document by original filename."""
     safe_name = Path(name).name

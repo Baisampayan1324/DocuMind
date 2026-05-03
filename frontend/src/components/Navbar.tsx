@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { isSetupComplete } from '../lib/setupState';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const getStartedPath = isSetupComplete() ? '/dashboard' : '/setup';
 
   return (
     <nav className="fixed top-6 left-6 right-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto z-50 px-6 py-3 flex items-center justify-between md:gap-12 lg:gap-24 bg-surface-container-lowest/90 backdrop-blur-xl border border-outline-variant/20 rounded-full shadow-[0_8px_32px_-8px_rgba(0,0,0,0.05)] transition-all duration-300">
@@ -21,7 +23,7 @@ export function Navbar() {
 
       <div className="flex items-center gap-2">
         <div className="hidden md:flex items-center gap-6">
-          <Link to="/setup" className="bg-primary text-on-primary px-6 py-2.5 rounded-full font-semibold shadow-sm hover:opacity-90 transition-all active:scale-95 text-sm">
+          <Link to={getStartedPath} className="bg-primary text-on-primary px-6 py-2.5 rounded-full font-semibold shadow-sm hover:opacity-90 transition-all active:scale-95 text-sm">
             Get Started
           </Link>
         </div>
@@ -47,7 +49,7 @@ export function Navbar() {
             <a href="https://github.com" target="_blank" rel="noopener noreferrer" onClick={() => setIsOpen(false)} className="text-lg font-bold text-primary p-2 hover:bg-surface-container rounded-xl transition-all">GitHub</a>
             <Link to="/about" onClick={() => setIsOpen(false)} className="text-lg font-bold text-primary p-2 hover:bg-surface-container rounded-xl transition-all">About</Link>
             <div className="h-px bg-outline-variant/10 my-2" />
-            <Link to="/setup" onClick={() => setIsOpen(false)} className="bg-primary text-on-primary text-center py-4 rounded-xl font-bold shadow-lg">
+            <Link to={getStartedPath} onClick={() => setIsOpen(false)} className="bg-primary text-on-primary text-center py-4 rounded-xl font-bold shadow-lg">
               Get Started
             </Link>
           </motion.div>
