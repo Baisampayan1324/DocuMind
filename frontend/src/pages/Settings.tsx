@@ -16,7 +16,7 @@ import { cn } from '../lib/utils';
 import { useTheme } from '../context/ThemeContext';
 import { clearChatHistory } from '../lib/chatStorage';
 import { clearLibrary } from '../lib/documentStorage';
-import { updateProviders, clearAll as clearAllBackend } from '../lib/api';
+import { updateProviders, clearAll as clearAllBackend, toCanonicalProvider } from '../lib/api';
 import { markSetupComplete } from '../lib/setupState';
 
 export default function Settings() {
@@ -83,9 +83,10 @@ export default function Settings() {
     const newKeyObj = { id: Date.now().toString(), provider: providerName, key: newApiKey };
 
     try {
+      const canonical = toCanonicalProvider(providerName);
       await updateProviders({
-        api_keys: [{ provider: providerName, key: newApiKey }],
-        provider_priority: [providerName.toLowerCase().replace(/ /g, '')],
+        api_keys: [{ provider: canonical, key: newApiKey }],
+        provider_priority: [canonical],
       });
       markSetupComplete();
       setNotification('API key created and synced to backend.');
@@ -125,9 +126,10 @@ export default function Settings() {
     setActiveModel(currentModel.name);
     // Push to backend
     try {
+      const canonical = toCanonicalProvider(currentModel.provider);
       await updateProviders({
-        api_keys: [{ provider: currentModel.provider, key: tempKey }],
-        provider_priority: [currentModel.provider.toLowerCase().replace(/ /g, '')],
+        api_keys: [{ provider: canonical, key: tempKey }],
+        provider_priority: [canonical],
       });
       markSetupComplete();
       setNotification(`${currentModel.name} configured and pushed to backend.`);
@@ -281,7 +283,7 @@ export default function Settings() {
                         <option value="Groq">Groq</option>
                         <option value="OpenRouter">OpenRouter</option>
                         <option value="Ollama">Ollama</option>
-      <option value="Custom">Custom</option>
+                        <option value="Custom">Custom</option>
                       </select>
                     </div>
 
@@ -562,4 +564,3 @@ export default function Settings() {
     </div>
   );
 }
-

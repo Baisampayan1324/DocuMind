@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
 import {
   BookOpen, FileText, Paperclip, ArrowUp,
-  Mic, X, Loader2, Plus, User, Bot, AlertTriangle,
+  Mic, X, Loader2, Plus, User, Bot, AlertTriangle, Cpu, ChevronUp, Check,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { uploadFiles, askQuestion, AskResponse, fetchHistory, Conversation } from '../lib/api';
@@ -41,6 +41,24 @@ export default function Dashboard() {
   const shouldKeepListeningRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [selectedProvider, setSelectedProvider] = useState('fusion');
+  const [availableProviders, setAvailableProviders] = useState<string[]>([]);
+  const [isProviderListOpen, setIsProviderListOpen] = useState(false);
+
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        const res = await fetch('/api/providers');
+        if (res.ok) {
+          const list = await res.json();
+          setAvailableProviders(list);
+        }
+      } catch (e) {
+        console.error('Failed to load providers:', e);
+      }
+    };
+    loadProviders();
+  }, []);
 
   // Save messages to localStorage whenever they change
   useEffect(() => {
@@ -126,7 +144,7 @@ export default function Dashboard() {
 
       // 2. Ask question (only if there's text)
       if (q) {
-        const res = await askQuestion(q);
+        const res = await askQuestion(q, selectedProvider);
         const assistantMsg: ChatMessage = {
           role: 'assistant',
           content: res.answer,
@@ -458,6 +476,68 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-1 md:gap-2 pr-1 md:pr-2">
+              <div className="relative">
+                <button
+                  onClick={() => setIsProviderListOpen(!isProviderListOpen)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
+                    selectedProvider === 'fusion' 
+                      ? "bg-primary/10 text-primary border border-primary/20" 
+                      : "bg-surface-container text-outline border border-outline-variant/20 hover:border-primary/40"
+                  )}
+                >
+                  <Cpu className="w-3 h-3" />
+                  <span className="hidden sm:inline">{selectedProvider.replace('fusion', 'Smart Fusion')}</span>
+                  <ChevronUp className={cn("w-3 h-3 transition-transform", isProviderListOpen && "rotate-180")} />
+                </button>
+
+                <AnimatePresence>
+                  {isProviderListOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute bottom-full right-0 mb-3 w-48 bg-surface-container-lowest border border-outline-variant/20 rounded-2xl shadow-2xl overflow-hidden z-[100]"
+                    >
+                      <div className="p-2 border-b border-outline-variant/10 bg-surface-container/30">
+                        <p className="text-[9px] font-bold text-outline uppercase tracking-widest px-2 py-1">Selection Strategy</p>
+                      </div>
+                      <div className="p-1">
+                        <button
+                          onClick={() => { setSelectedProvider('fusion'); setIsProviderListOpen(false); }}
+                          className={cn(
+                            "w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between group",
+                            selectedProvider === 'fusion' ? "bg-primary text-on-primary shadow-lg" : "text-primary hover:bg-primary/10"
+                          )}
+                        >
+                          <span className="flex flex-col">
+                            <span>Smart Fusion</span>
+                            <span className={cn("text-[8px] font-medium opacity-70", selectedProvider === 'fusion' ? "text-white" : "text-outline")}>Auto-select best available</span>
+                          </span>
+                          {selectedProvider === 'fusion' && <Check className="w-3 h-3" />}
+                        </button>
+                        
+                        <div className="my-1 border-t border-outline-variant/10" />
+                        
+                        {availableProviders.map((p) => (
+                          <button
+                            key={p}
+                            onClick={() => { setSelectedProvider(p); setIsProviderListOpen(false); }}
+                            className={cn(
+                              "w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between uppercase tracking-tight",
+                              selectedProvider === p ? "bg-primary text-on-primary shadow-lg" : "text-primary hover:bg-primary/10"
+                            )}
+                          >
+                            {p}
+                            {selectedProvider === p && <Check className="w-3 h-3" />}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <button
                 onClick={isListening ? stopListening : startListening}
                 className={cn(

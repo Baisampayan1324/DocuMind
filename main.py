@@ -71,11 +71,7 @@ def start_backend(port=8000):
             "--host", "0.0.0.0",
             "--port", str(port),
             "--reload"
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True,
-        bufsize=1
+        ]
     )
     
     time.sleep(3)

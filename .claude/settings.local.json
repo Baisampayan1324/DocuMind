@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import ast; [ast.parse\\(open\\(f, encoding='utf-8'\\).read\\(\\), filename=f\\) for f in ['backend/api.py','backend/rag_engine.py','backend/llm_provider.py','backend/config.py','backend/doc_loader.py','backend/models.py']]; print\\('All backend files parse OK'\\)\")",
+      "Bash(npx --yes tsc --noEmit)"
+    ]
+  }
+}

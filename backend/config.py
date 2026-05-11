@@ -63,6 +63,9 @@ class Config:
     # FAISS index storage
     FAISS_PERSIST_DIR = os.getenv("FAISS_PERSIST_DIR", "data/faiss_index")
 
+    # Where uploaded documents are stored on disk
+    UPLOAD_DIR = os.getenv("UPLOAD_DIR", "data/uploads")
+
     # Persistence toggle - Enable/disable FAISS index saving
     PERSIST_FAISS = os.getenv("PERSIST_FAISS", "false").lower() == "true"
 
@@ -95,6 +98,7 @@ class Config:
 
         cls.EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", os.getenv("EMBEDDINGS_MODEL", cls.EMBEDDING_MODEL))
         cls.FAISS_PERSIST_DIR = os.getenv("FAISS_PERSIST_DIR", cls.FAISS_PERSIST_DIR)
+        cls.UPLOAD_DIR = os.getenv("UPLOAD_DIR", cls.UPLOAD_DIR)
         cls.PERSIST_FAISS = os.getenv("PERSIST_FAISS", str(cls.PERSIST_FAISS)).lower() == "true"
         cls.PROVIDER_PRIORITY = _parse_provider_priority(os.getenv("PROVIDER_PRIORITY", "groq,openrouter,openai,gemini,ollama"))
         cls.HISTORY_DB_PATH = os.getenv("HISTORY_DB_PATH", cls.HISTORY_DB_PATH)

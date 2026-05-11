@@ -1,6 +1,8 @@
 # backend/llm_provider.py
 import os
+import time
 import logging
+import threading
 from typing import List, Optional
 
 from .config import Config
@@ -33,8 +35,14 @@ class LLMProvider:
       - test_provider(provider_name)
     """
 
+    # Cache TTL for the health-checked working-provider list.
+    _WORKING_CACHE_TTL_SECONDS = 60
+
     def __init__(self):
         self.providers = {}
+        self._working_cache: Optional[List[str]] = None
+        self._working_cache_ts: float = 0.0
+        self._working_cache_lock = threading.Lock()
         self._sync_env_from_config()
         self._init_providers()
 
@@ -58,7 +66,8 @@ class LLMProvider:
             try:
                 self.providers["groq"] = ChatGroq(
                     model=Config.GROQ_MODEL,
-                    temperature=0
+                    temperature=0,
+                    request_timeout=10
                 )
                 logger.info("Groq initialized: %s", Config.GROQ_MODEL)
             except Exception as e:
@@ -71,7 +80,8 @@ class LLMProvider:
                     model=Config.OPENROUTER_MODEL,
                     base_url="https://openrouter.ai/api/v1",
                     api_key=Config.OPENROUTER_API_KEY,
-                    temperature=0
+                    temperature=0,
+                    request_timeout=10
                 )
                 logger.info("OpenRouter initialized: %s", Config.OPENROUTER_MODEL)
             except Exception as e:
@@ -83,7 +93,8 @@ class LLMProvider:
                 self.providers["openai"] = ChatOpenAI(
                     model=Config.OPENAI_MODEL,
                     api_key=Config.OPENAI_API_KEY,
-                    temperature=0
+                    temperature=0,
+                    request_timeout=10
                 )
                 logger.info("OpenAI initialized: %s", Config.OPENAI_MODEL)
             except Exception as e:
@@ -109,7 +120,8 @@ class LLMProvider:
                 self.providers["ollama"] = ChatOllama(
                     model=Config.OLLAMA_MODEL,
                     base_url=Config.OLLAMA_BASE_URL,
-                    temperature=0
+                    temperature=0,
+                    timeout=10
                 )
                 logger.info("Ollama initialized: %s at %s", Config.OLLAMA_MODEL, Config.OLLAMA_BASE_URL)
             except Exception as e:
@@ -123,6 +135,9 @@ class LLMProvider:
     def reload_providers(self):
         """Rebuild provider clients after runtime config changes."""
         self.providers = {}
+        with self._working_cache_lock:
+            self._working_cache = None
+            self._working_cache_ts = 0.0
         self._sync_env_from_config()
         self._init_providers()
 
@@ -197,18 +212,35 @@ class LLMProvider:
                 logger.warning("Provider %s health check failed: %s", provider, error_msg)
             return False
 
-    def get_working_providers(self) -> List[str]:
+    def get_working_providers(self, force_refresh: bool = False) -> List[str]:
         """
         Return list of providers that pass health checks in priority order.
+
+        Result is cached for _WORKING_CACHE_TTL_SECONDS so the /ask endpoint
+        doesn't pay a round-trip to every LLM API on every request.
         """
-        working = []
+        with self._working_cache_lock:
+            now = time.monotonic()
+            cache_fresh = (
+                self._working_cache is not None
+                and (now - self._working_cache_ts) < self._WORKING_CACHE_TTL_SECONDS
+            )
+            if cache_fresh and not force_refresh:
+                return list(self._working_cache)  # type: ignore[arg-type]
+
         priority = getattr(Config, "PROVIDER_PRIORITY", None)
         if priority:
             candidates = list(priority)
         else:
             candidates = list(self.providers.keys())
 
+        working: List[str] = []
         for p in candidates:
             if p in self.providers and self.test_provider(p):
                 working.append(p)
-        return working
+
+        with self._working_cache_lock:
+            self._working_cache = working
+            self._working_cache_ts = time.monotonic()
+
+        return list(working)

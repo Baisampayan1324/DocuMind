@@ -49,9 +49,7 @@ class ConversationalRAG:
                 raise
 
     def _cleanup_on_startup(self):
-        """Remove temp files and non-persistent index files (only used when not persisting)."""
-        import os
-        import glob
+        """Remove the FAISS index and uploaded files when persistence is disabled."""
         import shutil
 
         path = Path(Config.FAISS_PERSIST_DIR)
@@ -62,13 +60,16 @@ class ConversationalRAG:
             except Exception as e:
                 logger.warning("Could not remove FAISS index: %s", e)
 
-        # Clean up temp files
-        for temp_file in glob.glob("temp_*"):
-            try:
-                os.remove(temp_file)
-                logger.info("Removed leftover temporary file: %s", temp_file)
-            except Exception as e:
-                logger.debug("Could not remove %s: %s", temp_file, e)
+        # Wipe the upload directory so non-persistent runs start clean.
+        upload_dir = Path(Config.UPLOAD_DIR)
+        if upload_dir.exists():
+            for item in upload_dir.iterdir():
+                if item.is_file():
+                    try:
+                        item.unlink()
+                        logger.info("Removed leftover uploaded file: %s", item.name)
+                    except Exception as e:
+                        logger.debug("Could not remove %s: %s", item, e)
 
     def _load_faiss_index(self):
         if not Config.PERSIST_FAISS:
@@ -122,7 +123,7 @@ class ConversationalRAG:
         # Save index if configured
         self._save_faiss_index()
 
-    def ask(self, question: str) -> Dict:
+    def ask(self, question: str, provider: Optional[str] = None) -> Dict:
         if not self.vectorstore:
             return {"answer": "No documents loaded.", "sources": []}
 
@@ -156,6 +157,16 @@ class ConversationalRAG:
 
         # Get provider priority list of working providers
         working_providers = self.llm_provider.get_working_providers()
+
+        # If a specific provider is requested, filter for it
+        if provider:
+            requested = provider.lower().strip()
+            # Handle special cases like 'fusion'
+            if requested == 'fusion':
+                # Fusion logic handled in _get_answer_with_priority if working_providers includes it
+                pass
+            else:
+                working_providers = [p for p in working_providers if p.lower() == requested]
 
         if not working_providers:
             # No working providers; return friendly message and log
@@ -333,9 +344,7 @@ class ConversationalRAG:
             return a1
 
     def clear_index(self):
-        """Clear FAISS index, conversation history, and temporary files"""
-        import os
-        import glob
+        """Clear FAISS index and conversation history."""
         import shutil
 
         self.vectorstore = None
@@ -349,11 +358,4 @@ class ConversationalRAG:
             except Exception as e:
                 logger.warning("Could not remove FAISS index: %s", e)
 
-        for temp_file in glob.glob("temp_*"):
-            try:
-                os.remove(temp_file)
-                logger.info("Removed temporary file: %s", temp_file)
-            except Exception as e:
-                logger.warning("Could not remove %s: %s", temp_file, e)
-
-        logger.info("Cleared index, history, and temporary files")
+        logger.info("Cleared FAISS index and conversation history")

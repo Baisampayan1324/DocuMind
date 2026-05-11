@@ -5,7 +5,7 @@ import { Cpu, Key, ArrowRight, Sparkles, Check, AlertTriangle } from 'lucide-rea
 import { cn } from '../lib/utils';
 import { GridBackground } from '../components/GridBackground';
 import { AmbientGlow } from '../components/AmbientGlow';
-import { updateProviders, healthCheck } from '../lib/api';
+import { updateProviders, healthCheck, toCanonicalProvider } from '../lib/api';
 import { getStoredApiKeys, isSetupComplete, markSetupComplete } from '../lib/setupState';
 
 const models = [
@@ -59,9 +59,10 @@ export default function Setup() {
         ? (apiKey || 'http://localhost:11434')
         : apiKey;
 
+      const canonical = toCanonicalProvider(selectedModel.provider);
       await updateProviders({
-        api_keys: [{ provider: selectedModel.provider, key: keyValue }],
-        provider_priority: [selectedModel.provider.toLowerCase().replace(/ /g, '')],
+        api_keys: [{ provider: canonical, key: keyValue }],
+        provider_priority: [canonical],
       });
 
       // 3. Persist to localStorage for UI state

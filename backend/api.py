@@ -1,14 +1,11 @@
 # backend/api.py
 import os
-import shutil
-import tempfile
 import logging
-import hashlib
 import re
 import threading
 import time
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -58,15 +55,50 @@ def count_tokens(text: str, model: str = "gpt-3.5-turbo") -> int:
         # Fallback to rough estimate
         return len(text) // 4
 
+def _upload_dir() -> Path:
+    """Return the configured upload directory, creating it if needed."""
+    upload_dir = Path(Config.UPLOAD_DIR)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    return upload_dir
+
+
+def _migrate_legacy_temp_files() -> int:
+    """
+    One-time cleanup: move any stray temp_* files from the project root
+    (the legacy upload location) into the new UPLOAD_DIR. Returns the count moved.
+    """
+    moved = 0
+    root = Path(__file__).resolve().parent.parent
+    dest = _upload_dir()
+    for legacy in root.glob("temp_*"):
+        if not legacy.is_file():
+            continue
+        try:
+            target = dest / legacy.name
+            if target.exists():
+                legacy.unlink()
+            else:
+                legacy.replace(target)
+            moved += 1
+        except Exception as e:
+            logger.warning("Could not migrate legacy temp file %s: %s", legacy, e)
+    if moved:
+        logger.info("Migrated %d legacy temp_* file(s) from project root into %s", moved, dest)
+    return moved
+
+
 @app.on_event("startup")
 def startup_event():
     models.init_db()
     logger.info("History DB initialized")
     Path(Config.FAISS_PERSIST_DIR).mkdir(parents=True, exist_ok=True)
+    _upload_dir()
+    _migrate_legacy_temp_files()
     logger.info("Backend startup complete.")
 
 class AskRequest(BaseModel):
     question: str
+    provider: Optional[str] = None
 
 class AskResponse(BaseModel):
     answer: str
@@ -216,13 +248,16 @@ def update_provider_settings(payload: ProviderSettingsUpdateRequest):
 
         Config.reload_from_env()
         RAG.llm_provider.reload_providers()
+        # Re-run health checks immediately so the next /ask uses the fresh list.
+        working_after = RAG.llm_provider.get_working_providers(force_refresh=True)
 
     return {
         "status": "ok",
         "updated": sorted(set(updated_keys)),
         "env_file": str(env_file),
         "available_providers": list(RAG.llm_provider.providers.keys()),
-        "provider_priority": Config.PROVIDER_PRIORITY
+        "provider_priority": Config.PROVIDER_PRIORITY,
+        "working_providers": working_after,
     }
 
 @app.get("/", summary="Basic backend test page", tags=["admin"])
@@ -247,25 +282,24 @@ def init_all():
 @app.post("/upload", summary="Upload files and index them", tags=["docs"])
 async def upload(files: List[UploadFile] = File(...)):
     """
-    Upload one or more files. They are saved temporarily and passed to RAG.add_documents().
-    Files are written as temp_{originalname} in the working directory.
+    Upload one or more files. Each file is stored under UPLOAD_DIR using its
+    original filename (with path components stripped) and indexed by RAG.
     """
-    saved_paths = []
-    filenames = []
+    saved_paths: List[str] = []
+    filenames: List[str] = []
+    upload_dir = _upload_dir()
     try:
         for u in files:
             contents = await u.read()
-            filename = u.filename or "unknown"
-            safe_name = f"temp_{Path(filename).name}"
-            path = Path(safe_name)
-            with open(path, "wb") as f:
+            filename = Path(u.filename or "unknown").name  # strip any path components
+            target = upload_dir / filename
+            with open(target, "wb") as f:
                 f.write(contents)
-            saved_paths.append(str(path))
+            saved_paths.append(str(target))
             filenames.append(filename)
-        
-        # Add to RAG
+
         RAG.add_documents(saved_paths)
-        
+
         return {
             "status": "ok",
             "files_processed": len(saved_paths),
@@ -283,7 +317,7 @@ def ask(req: AskRequest):
     """
     start_time = time.time()
     try:
-        res = RAG.ask(req.question)
+        res = RAG.ask(req.question, provider=req.provider)
         # RAG.ask returns {"answer":..., "sources": [...], "meta": {...}}
         meta = res.get("meta") or {}
 
@@ -296,11 +330,11 @@ def ask(req: AskRequest):
         elapsed_time = time.time() - start_time
         meta["duration_s"] = elapsed_time
 
-        # Clean up source filenames: remove "temp_" prefix for display
+        # Legacy data may have "temp_"-prefixed source names; strip for display.
         cleaned_sources = []
         for src in res.get("sources", []):
             cleaned_src = dict(src)
-            if "source" in cleaned_src and cleaned_src["source"].startswith("temp_"):
+            if isinstance(cleaned_src.get("source"), str) and cleaned_src["source"].startswith("temp_"):
                 cleaned_src["source"] = cleaned_src["source"].replace("temp_", "", 1)
             cleaned_sources.append(cleaned_src)
 
@@ -329,18 +363,17 @@ def clear_all():
     """Clear all documents and conversation history"""
     try:
         RAG.clear_index()
-        
-        # Delete all conversations using ORM
         models.delete_all_conversations()
-        
-        # Clean up temp files
-        import glob
-        for temp_file in glob.glob("temp_*"):
-            try:
-                Path(temp_file).unlink()
-            except:
-                pass
-        
+
+        # Remove every uploaded file from the upload directory.
+        upload_dir = _upload_dir()
+        for item in upload_dir.iterdir():
+            if item.is_file():
+                try:
+                    item.unlink()
+                except Exception:
+                    pass
+
         return {"status": "cleared"}
     except Exception as e:
         logger.exception("Clear failed: %s", e)
@@ -411,15 +444,16 @@ def search_conversations(q: str = Query(..., min_length=1), limit: int = Query(5
 
 @app.get("/documents", summary="List uploaded documents", tags=["docs"])
 def list_uploaded_docs():
-    """List files previously uploaded and stored as temp_* in app working directory."""
+    """List files stored in the upload directory."""
     try:
         docs: List[Dict[str, Any]] = []
-        for item in Path('.').glob('temp_*'):
+        upload_dir = _upload_dir()
+        for item in upload_dir.iterdir():
             if not item.is_file():
                 continue
             stat = item.stat()
             docs.append({
-                "name": item.name.replace("temp_", "", 1),
+                "name": item.name,
                 "stored_name": item.name,
                 "uploaded_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
                 "size": stat.st_size,
@@ -433,11 +467,18 @@ def list_uploaded_docs():
 
 @app.get("/documents/download", summary="Download uploaded document", tags=["docs"])
 def download_uploaded_doc(name: str = Query(..., min_length=1)):
-    """Download a previously uploaded document by original filename."""
+    """Download a previously uploaded document by its original filename."""
     safe_name = Path(name).name
-    stored_path = Path(f"temp_{safe_name}")
+    upload_dir = _upload_dir()
+    stored_path = upload_dir / safe_name
 
     if not stored_path.exists() or not stored_path.is_file():
         raise HTTPException(status_code=404, detail="Document not found")
 
     return FileResponse(path=str(stored_path), filename=safe_name)
+
+
+@app.get("/providers", summary="List available AI providers and status", tags=["admin"])
+def list_providers():
+    """Returns a list of all providers configured and their health status."""
+    return RAG.llm_provider.get_working_providers()
