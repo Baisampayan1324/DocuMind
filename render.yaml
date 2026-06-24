@@ -8,9 +8,7 @@ services:
     # Root directory for the service (repo root so backend/ package resolves)
     rootDir: .
 
-    buildCommand: |
-      pip install torch --index-url https://download.pytorch.org/whl/cpu &&
-      pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn backend.api:app --host 0.0.0.0 --port $PORT
 
     healthCheckPath: /health

@@ -1,4 +1,5 @@
 # backend/rag_engine.py
+import os
 import logging
 from pathlib import Path
 from typing import List, Dict, Optional
