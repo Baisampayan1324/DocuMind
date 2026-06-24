@@ -1,0 +1,65 @@
+services:
+  - type: web
+    name: documind-backend
+    runtime: python
+    region: oregon
+    plan: free
+
+    # Root directory for the service (repo root so backend/ package resolves)
+    rootDir: .
+
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.api:app --host 0.0.0.0 --port $PORT
+
+    healthCheckPath: /health
+
+    envVars:
+      # ── LLM Provider Keys (set in Render dashboard, NOT here) ──────────────
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+      # ── Provider Config ─────────────────────────────────────────────────────
+      - key: PROVIDER_PRIORITY
+        value: groq,openrouter,openai,gemini,ollama
+      - key: GROQ_MODEL
+        value: llama-3.1-8b-instant
+      - key: OPENROUTER_MODEL
+        value: meta-llama/llama-3.3-8b-instruct:free
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: GEMINI_MODEL
+        value: gemini-1.5-flash
+
+      # ── Embedding & RAG Config ──────────────────────────────────────────────
+      - key: EMBEDDINGS_MODEL
+        value: sentence-transformers/all-MiniLM-L6-v2
+      - key: CHUNK_SIZE
+        value: "1000"
+      - key: CHUNK_OVERLAP
+        value: "200"
+      - key: TOP_K
+        value: "4"
+
+      # ── Storage ─────────────────────────────────────────────────────────────
+      - key: PERSIST_FAISS
+        value: "true"
+      - key: FAISS_PERSIST_DIR
+        value: /tmp/faiss_index
+      - key: HISTORY_DB_PATH
+        value: /tmp/conversation_history.db
+
+      # ── CORS: allow your Vercel frontend ───────────────────────────────────
+      - key: ALLOWED_ORIGINS
+        value: https://doc-u-mind.dev,https://www.doc-u-mind.dev
+
+      # ── Python env ──────────────────────────────────────────────────────────
+      - key: PYTHONUNBUFFERED
+        value: "1"

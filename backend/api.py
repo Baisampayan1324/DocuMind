@@ -27,13 +27,28 @@ logger.setLevel(logging.INFO)
 
 app = FastAPI(title="AI Documind RAG API")
 
+# Allow origins from env (comma-separated); fall back to * for local dev
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
+ALLOWED_ORIGINS: list[str] = (
+    [o.strip() for o in _raw_origins.split(",") if o.strip()]
+    if _raw_origins != "*"
+    else ["*"]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/health", tags=["Health"])
+def health_check():
+    """Render health-check endpoint — returns 200 when the service is ready."""
+    return {"status": "ok"}
+
 
 RAG = ConversationalRAG()
 
