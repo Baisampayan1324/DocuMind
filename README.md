@@ -1437,4 +1437,135 @@ Then open http://localhost:8501 and start asking questions!
 
 ---
 
-Made with ❤️ using FastAPI, Streamlit, and LangChain
+Made with ❤️ using FastAPI, React, and LangChain
+
+---
+
+## 🚀 Production Deployment
+
+DocuMind is deployed as two independent services:
+
+| Layer | Platform | URL |
+|-------|----------|-----|
+| **Frontend** | Vercel | [doc-u-mind.dev](https://doc-u-mind.dev) |
+| **Backend API** | Hugging Face Spaces | `https://baisampayan1324-documind-backend.hf.space` |
+
+---
+
+### 🤗 Backend — Hugging Face Spaces (Docker)
+
+The FastAPI backend runs as a **Docker Space** on Hugging Face Spaces, which provides 2 vCPU and 16 GB RAM — enough headroom for `torch`, `sentence-transformers`, and FAISS.
+
+#### Create the Space
+
+1. Go to [huggingface.co/new-space](https://huggingface.co/new-space)
+2. **Space name:** `documind-backend`  
+3. **SDK:** `Docker`
+4. Click **Create Space**
+
+#### Link your GitHub repo
+
+In the Space → **Files** tab → connect to `Baisampayan1324/DocuMind`.  
+The [`Dockerfile`](./Dockerfile) at the repo root is picked up automatically.
+
+#### Set Secrets (Space → Settings → Variables and Secrets)
+
+| Secret | Description |
+|--------|-------------|
+| `GROQ_API_KEY` | Groq API key (fast free tier) |
+| `OPENROUTER_API_KEY` | OpenRouter key |
+| `OPENAI_API_KEY` | OpenAI key (optional) |
+| `GEMINI_API_KEY` | Google Gemini key |
+| `ANTHROPIC_API_KEY` | Anthropic key (optional) |
+| `ALLOWED_ORIGINS` | `https://doc-u-mind.dev,https://www.doc-u-mind.dev` |
+
+> The `Dockerfile` pre-installs CPU-only `torch` to keep image size down. All other env defaults (chunk sizes, model names, paths) are set inside the Dockerfile and can be overridden via Space variables.
+
+#### Space URL format
+
+```
+https://<your-hf-username>-documind-backend.hf.space
+```
+
+Test it:
+```bash
+curl https://baisampayan1324-documind-backend.hf.space/health
+# → {"status": "ok", "rag_ready": true}
+```
+
+---
+
+### ▲ Frontend — Vercel
+
+The React + Vite frontend is deployed on Vercel and served via the custom domain.
+
+#### Import project
+
+1. [vercel.com](https://vercel.com) → **New Project** → import `Baisampayan1324/DocuMind`
+2. **Root Directory:** `frontend`
+3. **Framework Preset:** Vite
+4. **Build command:** `npm run build`  **Output:** `dist`
+
+#### Environment variables (Vercel Dashboard → Settings → Environment Variables)
+
+| Variable | Value |
+|----------|-------|
+| `VITE_API_BASE_URL` | `https://baisampayan1324-documind-backend.hf.space` |
+| `GEMINI_API_KEY` | your Gemini key (if used client-side) |
+
+#### Update `frontend/vercel.json`
+
+Replace the `<YOUR_HF_USERNAME>` placeholder with your actual HF username:
+
+```json
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://baisampayan1324-documind-backend.hf.space/:path*"
+    }
+  ]
+}
+```
+
+---
+
+### 🌐 Custom Domain — doc-u-mind.dev
+
+#### Add domain in Vercel
+
+Vercel Project → **Settings → Domains** → Add `doc-u-mind.dev` and `www.doc-u-mind.dev`
+
+#### DNS records (at your domain registrar)
+
+| Type | Name | Value |
+|------|------|-------|
+| `A` | `@` | `76.76.21.21` |
+| `CNAME` | `www` | `cname.vercel-dns.com` |
+
+Vercel provisions a free TLS certificate automatically once DNS propagates (~5 min).
+
+---
+
+### 🏗️ Architecture Overview
+
+```
+Browser  ──→  doc-u-mind.dev  (Vercel CDN)
+                    │
+                    ├── Static assets (React SPA)
+                    │
+                    └── /api/*  ──→  HuggingFace Spaces (FastAPI)
+                                          │
+                                          ├── LangChain RAG engine
+                                          ├── FAISS vector index
+                                          ├── Multi-LLM provider fallback
+                                          └── SQLite conversation history
+```
+
+---
+
+### ⚠️ Free Tier Notes
+
+- **HF Spaces** sleeps after ~15 min of inactivity. The first request after wake-up takes ~30–60s (model reload). Upgrade to a paid Space or use ZeroGPU for persistent uptime.
+- **FAISS index** and **SQLite history** are stored in `/tmp` inside the container — they reset on every restart. For persistence, attach an HF Spaces persistent storage volume or migrate to a cloud vector store (Pinecone, Supabase pgvector).
+- **Vercel** free tier is fully persistent with global CDN — no limitations for the frontend.
