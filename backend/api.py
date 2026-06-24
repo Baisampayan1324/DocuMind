@@ -4,6 +4,7 @@ import logging
 import re
 import threading
 import time
+from contextlib import asynccontextmanager
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,7 +26,30 @@ from . import models
 logger = logging.getLogger("backend.api")
 logger.setLevel(logging.INFO)
 
-app = FastAPI(title="AI Documind RAG API")
+# ─── Lazy RAG singleton ────────────────────────────────────────────────────────
+# Initialised inside the lifespan so uvicorn can bind to the port FIRST.
+# Render's port scanner detects the open port immediately; model loading
+# (sentence-transformers / FAISS) then happens in the background.
+
+RAG: Optional["ConversationalRAG"] = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Load heavy models after the server is already listening."""
+    global RAG
+    logger.info("[lifespan] Initialising RAG engine...")
+    try:
+        RAG = ConversationalRAG()
+        logger.info("[lifespan] RAG engine ready.")
+    except Exception as exc:
+        logger.error("[lifespan] RAG engine failed to initialise: %s", exc)
+        # Keep server running so /health still responds — callers get 503 until fixed.
+    yield
+    # Shutdown: nothing to clean up for now
+
+
+app = FastAPI(title="AI Documind RAG API", lifespan=lifespan)
 
 # Allow origins from env (comma-separated); fall back to * for local dev
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
@@ -46,11 +70,8 @@ app.add_middleware(
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    """Render health-check endpoint — returns 200 when the service is ready."""
-    return {"status": "ok"}
-
-
-RAG = ConversationalRAG()
+    """Render health-check endpoint — returns 200 as soon as uvicorn is listening."""
+    return {"status": "ok", "rag_ready": RAG is not None}
 
 # ─── Token Counting Helper ───────────────────────────────────────────
 
