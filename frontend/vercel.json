@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://<YOUR_HF_USERNAME>-documind-backend.hf.space/:path*"
+      "destination": "https://baisampayandey-documind.hf.space/:path*"
     },
     {
       "source": "/(.*)",
@@ -25,7 +25,7 @@
     }
   ],
   "env": {
-    "VITE_API_BASE_URL": "https://<YOUR_HF_USERNAME>-documind-backend.hf.space",
+    "VITE_API_BASE_URL": "https://baisampayandey-documind.hf.space",
     "VITE_APP_ENV": "production"
   }
 }
