@@ -89,3 +89,8 @@ Thumbs.db
 
 ## Streamlit
 .streamlit/
+
+## Local-only files (kept on disk, never committed)
+CLAUDE.md
+COMPARISON_MEMORYOS_VS_DOCUMIND.md
+claude\ session.txt
