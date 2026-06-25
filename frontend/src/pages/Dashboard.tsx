@@ -258,10 +258,10 @@ export default function Dashboard() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-surface-container rounded-2xl mb-6 shadow-sm">
               <BookOpen className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-primary leading-tight mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-primary leading-tight mb-4">
               What can I help with?
             </h2>
-            <p className="text-outline text-lg">
+            <p className="text-outline text-sm sm:text-base md:text-lg">
               Upload a document and ask anything — the RAG engine will find answers with source citations.
             </p>
 

@@ -60,25 +60,25 @@ export const BentoFeatures: React.FC = () => {
     <section 
       id="features" 
       ref={sectionRef}
-      className={`py-24 max-w-7xl mx-auto px-6 bg-[#faf9f7] rounded-[3rem] my-12 ${isVisible ? 'visible' : ''}`}
+      className={`py-12 sm:py-20 md:py-24 max-w-7xl mx-auto px-4 sm:px-6 bg-[#faf9f7] rounded-[2rem] sm:rounded-[3rem] my-6 sm:my-10 md:my-12 ${isVisible ? 'visible' : ''}`}
     >
-      <div className="mb-16 max-w-2xl text-center md:text-left">
-        <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-[#5c3a21]">Master Your Knowledge</h2>
-        <p className="text-lg text-stone-600 max-w-xl mx-auto md:mx-0">Four core capabilities designed to eliminate manual document searching forever.</p>
+      <div className="mb-10 sm:mb-14 md:mb-16 max-w-2xl text-center md:text-left">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 tracking-tight text-[#5c3a21]">Master Your Knowledge</h2>
+        <p className="text-base sm:text-lg text-stone-600 max-w-xl mx-auto md:mx-0">Four core capabilities designed to eliminate manual document searching forever.</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
         {features.map((feature, i) => (
           <div 
             key={i}
-            className={`bg-white p-8 rounded-[2rem] shadow-sm border border-stone-100 flex flex-col group ${feature.colSpan} feature-card-hidden ${isVisible ? 'feature-card-visible' : ''}`}
+            className={`bg-white p-6 sm:p-7 md:p-8 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-stone-100 flex flex-col group ${feature.colSpan} feature-card-hidden ${isVisible ? 'feature-card-visible' : ''}`}
             style={{ transitionDelay: `${i * 120}ms` }}
           >
-            <div className="w-14 h-14 rounded-2xl bg-[#f0ece6] text-[#5c3a21] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <feature.icon className="w-6 h-6" />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-[#f0ece6] text-[#5c3a21] flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">
+              <feature.icon className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <h3 className="text-2xl font-bold mb-3 text-[#5c3a21]">{feature.title}</h3>
-            <p className="text-stone-600 leading-relaxed text-base">{feature.description}</p>
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 text-[#5c3a21]">{feature.title}</h3>
+            <p className="text-stone-600 leading-relaxed text-sm sm:text-base">{feature.description}</p>
           </div>
         ))}
       </div>

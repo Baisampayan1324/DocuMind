@@ -10,7 +10,7 @@ export function Navbar() {
   const getStartedPath = isSetupComplete() ? '/dashboard' : '/setup';
 
   return (
-    <nav className="fixed top-6 left-6 right-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto z-50 px-6 py-3 flex items-center justify-between md:gap-12 lg:gap-24 bg-surface-container-lowest/90 backdrop-blur-xl border border-outline-variant/20 rounded-full shadow-[0_8px_32px_-8px_rgba(0,0,0,0.05)] transition-all duration-300">
+    <nav className="fixed top-3 sm:top-6 left-3 sm:left-6 right-3 sm:right-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto z-50 px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between md:gap-12 lg:gap-24 bg-surface-container-lowest/90 backdrop-blur-xl border border-outline-variant/20 rounded-full shadow-[0_8px_32px_-8px_rgba(0,0,0,0.05)] transition-all duration-300">
       <Link to="/" className="flex items-center shrink-0">
         <span className="text-xl font-bold text-primary tracking-tight">DocuMind</span>
       </Link>
