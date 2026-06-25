@@ -58,37 +58,41 @@ export default function LandingPage() {
             </MagneticButton>
           </div>
 
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 40 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ 
-              delay: 0.8,
-              duration: 1,
-              ease: [0.22, 1, 0.36, 1]
-            }}
-            className="mt-12 sm:mt-20 md:mt-32 relative max-w-5xl mx-auto"
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 40 }}
+            animate={{ opacity: 1, scale: 1,    y: 0  }}
+            transition={{ delay: 0.8, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-10 sm:mt-20 md:mt-28 lg:mt-32 relative max-w-5xl mx-auto"
           >
-            <motion.div 
-              animate={{ 
-                rotateX: [2, -2, 2],
-                rotateY: [-2, 2, -2],
-              }}
-              transition={{ 
-                repeat: Infinity, 
-                duration: 6, 
-                ease: "easeInOut" 
-              }}
-              style={{ perspective: 1000 }}
-              className="relative"
-            >
-              <div className="absolute -inset-4 sm:-inset-10 bg-primary/10 blur-[80px] sm:blur-[120px] rounded-full opacity-50"></div>
-              <div className="absolute -inset-4 sm:-inset-10 bg-secondary/5 blur-[80px] sm:blur-[120px] rounded-full opacity-30 translate-x-10 sm:translate-x-20"></div>
-              
-              <div className="relative bg-surface-container-lowest rounded-[1.5rem] sm:rounded-[2.5rem] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.2)] sm:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] overflow-hidden border border-outline-variant/20 aspect-video flex items-center justify-center group">
-                <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                <ChatAnimation />
-              </div>
-            </motion.div>
+            {/* Ambient glow — scales with screen */}
+            <div className="absolute -inset-3 sm:-inset-8 md:-inset-10
+                            bg-primary/10 blur-[50px] sm:blur-[90px] md:blur-[120px]
+                            rounded-full opacity-50 pointer-events-none" />
+            <div className="absolute -inset-3 sm:-inset-8 md:-inset-10
+                            bg-secondary/5 blur-[50px] sm:blur-[90px] md:blur-[120px]
+                            rounded-full opacity-30 translate-x-6 sm:translate-x-14 md:translate-x-20
+                            pointer-events-none" />
+
+            {/*
+              Card height strategy:
+              • phone  (<480px)  → 320px  — portrait, shows 2 messages
+              • sm     (≥640px)  → 380px  — shows 3 messages
+              • md     (≥768px)  → aspect-video (natural 16:9)
+              We use a responsive class chain + md:aspect-video to switch
+            */}
+            <div className="relative overflow-hidden border border-outline-variant/20
+                            bg-surface-container-lowest group
+                            rounded-2xl sm:rounded-3xl md:rounded-[2.5rem]
+                            shadow-[0_12px_40px_-8px_rgba(0,0,0,0.16)]
+                            sm:shadow-[0_24px_56px_-12px_rgba(0,0,0,0.18)]
+                            md:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)]
+                            h-[320px] sm:h-[380px] md:h-auto md:aspect-video">
+              {/* Hover shimmer */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-secondary/5
+                              opacity-0 group-hover:opacity-100 transition-opacity duration-1000
+                              pointer-events-none z-10" />
+              <ChatAnimation />
+            </div>
           </motion.div>
         </section>
 

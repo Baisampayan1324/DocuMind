@@ -1,165 +1,303 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
-import { User, Bot, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { User, Bot, ArrowRight, Zap } from 'lucide-react';
 
+/* ─── Chat script ────────────────────────────────────────────────────────── */
 const CHAT_SCRIPT = [
-  { role: 'user', text: 'Summarize the findings in the Q3 report.' },
-  { role: 'bot', text: 'The Q3 report highlights a 12% increase in neural efficiency and a 5% drop in latency. Overall sentiment is positive.' },
-  { role: 'user', text: 'Were there any risks identified?' },
-  { role: 'bot', text: 'Yes, minor latency issues were noted in the vectorize step during peak loads. This affected 2.4% of total queries.' },
-  { role: 'user', text: 'What is the recommended solution?' },
-  { role: 'bot', text: 'The engineering team suggests scaling the vector database clusters and implementing a Redis caching layer to mitigate peak load latency.' },
-  { role: 'user', text: 'Draft a quick email to the team with these points.' },
-  { role: 'bot', text: 'Subject: Q3 Report Summary & Next Steps\n\nHi team,\n\nThe Q3 report is looking good. We saw a 12% increase in efficiency. We need to address minor latency in the vectorize step by scaling clusters.\n\nBest,\nAI Assistant' },
-  { role: 'user', text: 'Looks perfect. Send it out.' },
-  { role: 'bot', text: 'Email has been queued for sending. Is there anything else you need help with today?' }
+  { role: 'user',  text: 'Summarize the Q3 report findings.' },
+  { role: 'bot',   text: 'Q3 shows a 12% boost in neural efficiency and 5% drop in latency. Overall sentiment: positive.' },
+  { role: 'user',  text: 'Any risks identified?' },
+  { role: 'bot',   text: 'Minor latency spikes in the vectorize step at peak load — affected ~2.4% of queries.' },
+  { role: 'user',  text: 'Recommended fix?' },
+  { role: 'bot',   text: 'Scale vector DB clusters and add a Redis caching layer to absorb peak-load bursts.' },
+  { role: 'user',  text: 'Perfect. Draft the team email.' },
+  { role: 'bot',   text: 'Done! Email queued with Q3 highlights and next-step action items. Anything else?' },
 ];
 
-const TypewriterText = ({ text, onComplete }: { text: string, onComplete: () => void }) => {
-  const [displayedText, setDisplayedText] = useState('');
+/* ─── How many messages to SHOW per screen size ─────────────────────────── */
+function useVisibleCount() {
+  const [count, setCount] = useState(4);
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      if (w < 480)       setCount(2); // phone
+      else if (w < 768)  setCount(3); // large phone / small tablet
+      else if (w < 1024) setCount(4); // tablet / landscape
+      else               setCount(6); // laptop / desktop
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+  return count;
+}
+
+/* ─── Typewriter ─────────────────────────────────────────────────────────── */
+const TypewriterText = ({
+  text,
+  onComplete,
+  speed = 20,
+}: {
+  text: string;
+  onComplete: () => void;
+  speed?: number;
+}) => {
+  const [shown, setShown] = useState('');
+  const cb = useCallback(onComplete, []);
 
   useEffect(() => {
+    setShown('');
     let i = 0;
-    const interval = setInterval(() => {
-      setDisplayedText(text.slice(0, i + 1));
+    const id = setInterval(() => {
       i++;
-      if (i >= text.length) {
-        clearInterval(interval);
-        onComplete();
-      }
-    }, 15); // Fast typing speed
-    return () => clearInterval(interval);
-  }, [text, onComplete]);
+      setShown(text.slice(0, i));
+      if (i >= text.length) { clearInterval(id); cb(); }
+    }, speed);
+    return () => clearInterval(id);
+  }, [text, speed, cb]);
 
   return (
     <span className="whitespace-pre-wrap">
-      {displayedText}
-      <span className="inline-block w-1.5 h-3.5 ml-1 bg-stone-400 animate-pulse align-middle" />
+      {shown}
+      <span className="inline-block w-0.5 h-[0.85em] ml-0.5 bg-stone-400 animate-pulse align-middle rounded-full" />
     </span>
   );
 };
 
+/* ─── Main component ─────────────────────────────────────────────────────── */
 export const ChatAnimation: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [typingComplete, setTypingComplete] = useState(false);
+  const [typingComplete, setTypingComplete]  = useState(false);
   const [loopCount, setLoopCount] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef  = useRef<HTMLDivElement>(null);
+  const visibleMax = useVisibleCount();
 
-  // Auto-scroll to bottom
+  /* auto-scroll */
   useEffect(() => {
-    if (scrollRef.current) {
+    if (scrollRef.current)
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
   });
 
+  /* conversation driver */
   useEffect(() => {
     if (currentIndex >= CHAT_SCRIPT.length) {
-      const timer = setTimeout(() => {
+      const t = setTimeout(() => {
         setCurrentIndex(0);
         setTypingComplete(false);
-        setLoopCount(prev => prev + 1);
-      }, 4000);
-      return () => clearTimeout(timer);
+        setLoopCount(p => p + 1);
+      }, 3500);
+      return () => clearTimeout(t);
     }
-
-    const currentMsg = CHAT_SCRIPT[currentIndex];
-    if (currentMsg.role === 'user') {
-      const timer = setTimeout(() => {
-        setCurrentIndex(prev => prev + 1);
-      }, 1200);
-      return () => clearTimeout(timer);
-    } else {
-      // Bot message
-      if (typingComplete) {
-        const timer = setTimeout(() => {
-          setTypingComplete(false);
-          setCurrentIndex(prev => prev + 1);
-        }, 1500);
-        return () => clearTimeout(timer);
-      }
+    const msg = CHAT_SCRIPT[currentIndex];
+    if (msg.role === 'user') {
+      const t = setTimeout(() => setCurrentIndex(p => p + 1), 1100);
+      return () => clearTimeout(t);
+    }
+    if (typingComplete) {
+      const t = setTimeout(() => {
+        setTypingComplete(false);
+        setCurrentIndex(p => p + 1);
+      }, 1300);
+      return () => clearTimeout(t);
     }
   }, [currentIndex, typingComplete]);
 
-  const visibleMessages = CHAT_SCRIPT.slice(0, currentIndex + 1);
+  /* show only the most recent `visibleMax` messages */
+  const allMessages  = CHAT_SCRIPT.slice(0, currentIndex + 1);
+  const visible      = allMessages.slice(-visibleMax);
+  const hiddenAbove  = allMessages.length - visible.length;
+
+  const statusText =
+    currentIndex >= CHAT_SCRIPT.length
+      ? 'Session complete.'
+      : CHAT_SCRIPT[currentIndex]?.role === 'bot' && !typingComplete
+      ? 'AI is typing…'
+      : 'Ask anything about your documents…';
 
   return (
-    <div className="w-full h-full bg-white flex flex-col relative overflow-hidden font-sans pointer-events-none">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-white z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-          <span className="text-xs font-bold tracking-widest text-stone-700 uppercase">Neural Link</span>
+    <div className="w-full h-full flex flex-col bg-white overflow-hidden font-sans pointer-events-none select-none">
+
+      {/* ── Title bar ───────────────────────────────────────────────────── */}
+      <div className="shrink-0 flex items-center justify-between
+                      px-3 py-2
+                      sm:px-5 sm:py-3
+                      md:px-6 md:py-4
+                      border-b border-stone-100 bg-white/95 backdrop-blur-sm z-10">
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+          <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+            <span className="relative inline-flex rounded-full h-full w-full bg-emerald-400" />
+          </span>
+          <span className="text-[8px] sm:text-[9px] md:text-[10px] lg:text-xs
+                           font-bold tracking-[0.18em] sm:tracking-[0.22em] md:tracking-widest
+                           text-stone-600 uppercase">
+            Neural Link
+          </span>
+          {/* tiny "live" badge — hidden on very small screens */}
+          <span className="hidden sm:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700
+                            text-[7px] md:text-[8px] font-bold px-1.5 py-0.5 rounded-full
+                            border border-emerald-200/60 uppercase tracking-wider">
+            <Zap className="w-2 h-2" />
+            Live
+          </span>
         </div>
-        <div className="flex gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-stone-200" />
-          <div className="w-1.5 h-1.5 rounded-full bg-stone-200" />
+        {/* macOS-style dots */}
+        <div className="flex gap-1 sm:gap-1.5">
+          {['bg-red-300','bg-yellow-300','bg-green-300'].map(c => (
+            <div key={c} className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${c}`} />
+          ))}
         </div>
-      </div>
-      
-      {/* Chat Body */}
-      <div 
-        ref={scrollRef}
-        className="p-6 flex-1 flex flex-col gap-6 overflow-hidden bg-[#faf9f7] scroll-smooth"
-      >
-        {visibleMessages.map((msg, idx) => {
-          const isLast = idx === currentIndex;
-          if (msg.role === 'user') {
-            return (
-              <motion.div 
-                key={`${loopCount}-${idx}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex justify-end gap-3"
-              >
-                <div className="bg-[#5c3a21] text-white px-5 py-3.5 rounded-2xl rounded-tr-sm max-w-[80%] shadow-sm">
-                  <p className="text-sm font-medium">{msg.text}</p>
-                </div>
-                <div className="w-10 h-10 rounded-xl bg-[#5c3a21] flex items-center justify-center text-white shrink-0 shadow-sm">
-                  <User className="w-5 h-5" />
-                </div>
-              </motion.div>
-            );
-          } else {
-            return (
-              <motion.div 
-                key={`${loopCount}-${idx}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex justify-start gap-3"
-              >
-                <div className="w-10 h-10 rounded-xl bg-[#f0ece6] flex items-center justify-center text-stone-700 shrink-0 shadow-sm border border-stone-200/50">
-                  <Bot className="w-5 h-5" />
-                </div>
-                <div className="bg-[#f0ece6] text-stone-700 px-5 py-3.5 rounded-2xl rounded-tl-sm max-w-[80%] shadow-sm border border-stone-200/50">
-                  <p className="text-sm leading-relaxed">
-                    {isLast ? (
-                      <TypewriterText 
-                        text={msg.text} 
-                        onComplete={() => setTypingComplete(true)} 
-                      />
-                    ) : (
-                      <span className="whitespace-pre-wrap">{msg.text}</span>
-                    )}
-                  </p>
-                </div>
-              </motion.div>
-            );
-          }
-        })}
       </div>
 
-      {/* Footer Input */}
-      <div className="p-4 bg-white border-t border-stone-100 z-10">
-        <div className="flex items-center justify-between bg-white border border-stone-200 rounded-2xl px-4 py-2.5 shadow-sm">
-          <span className="text-sm text-stone-400 italic">
-            {currentIndex >= CHAT_SCRIPT.length 
-              ? "Session ended." 
-              : CHAT_SCRIPT[currentIndex]?.role === 'bot' && !typingComplete
-                ? "AI is typing..."
-                : "Analyzing document stack..."}
+      {/* ── Chat body ───────────────────────────────────────────────────── */}
+      <div
+        ref={scrollRef}
+        style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+        className="flex-1 overflow-y-auto bg-[#faf9f7]
+                   px-2 py-2 gap-2
+                   sm:px-4 sm:py-3 sm:gap-3
+                   md:px-6 md:py-4 md:gap-4
+                   lg:px-7 lg:py-5 lg:gap-5
+                   flex flex-col"
+      >
+        {/* faded "older messages" hint when some are hidden */}
+        <AnimatePresence>
+          {hiddenAbove > 0 && (
+            <motion.div
+              key="older-hint"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center text-[8px] sm:text-[9px] md:text-[10px]
+                         text-stone-400 font-medium tracking-wide py-0.5"
+            >
+              ↑ {hiddenAbove} earlier message{hiddenAbove > 1 ? 's' : ''}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {visible.map((msg, idx) => {
+          const globalIdx = hiddenAbove + idx;
+          const isLast    = globalIdx === currentIndex;
+          const isUser    = msg.role === 'user';
+
+          return (
+            <motion.div
+              key={`${loopCount}-${globalIdx}`}
+              initial={{ opacity: 0, y: 10, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0,  scale: 1 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              className={`flex items-end
+                ${isUser ? 'justify-end' : 'justify-start'}
+                gap-1.5 sm:gap-2 md:gap-3`}
+            >
+              {/* Bot avatar — left */}
+              {!isUser && (
+                <div className="shrink-0
+                                w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-9 lg:h-9
+                                rounded-md sm:rounded-lg md:rounded-xl
+                                bg-[#f0ece6] border border-stone-200/60
+                                flex items-center justify-center text-stone-600 shadow-sm">
+                  <Bot className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
+                </div>
+              )}
+
+              {/* Bubble */}
+              <div
+                className={`
+                  max-w-[78%] sm:max-w-[75%] md:max-w-[72%]
+                  px-2.5 py-1.5
+                  sm:px-3.5 sm:py-2
+                  md:px-4 md:py-2.5
+                  lg:px-5 lg:py-3
+                  shadow-sm
+                  ${isUser
+                    ? 'bg-[#5c3a21] text-white rounded-2xl rounded-tr-sm'
+                    : 'bg-white text-stone-700 rounded-2xl rounded-tl-sm border border-stone-100'}
+                `}
+              >
+                <p className="text-[10px] sm:text-xs md:text-[13px] lg:text-sm
+                              leading-snug sm:leading-normal md:leading-relaxed
+                              font-normal whitespace-pre-wrap">
+                  {!isUser && isLast ? (
+                    <TypewriterText
+                      text={msg.text}
+                      onComplete={() => setTypingComplete(true)}
+                      speed={16}
+                    />
+                  ) : (
+                    msg.text
+                  )}
+                </p>
+              </div>
+
+              {/* User avatar — right */}
+              {isUser && (
+                <div className="shrink-0
+                                w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-9 lg:h-9
+                                rounded-md sm:rounded-lg md:rounded-xl
+                                bg-[#5c3a21]
+                                flex items-center justify-center text-white shadow-sm">
+                  <User className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
+
+        {/* typing indicator — shows between bot messages */}
+        <AnimatePresence>
+          {currentIndex < CHAT_SCRIPT.length &&
+            CHAT_SCRIPT[currentIndex]?.role === 'bot' &&
+            !typingComplete && (
+            <motion.div
+              key="typing"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex items-end gap-1.5 sm:gap-2 md:gap-3"
+            >
+              <div className="shrink-0
+                              w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-9 lg:h-9
+                              rounded-md sm:rounded-lg md:rounded-xl
+                              bg-[#f0ece6] border border-stone-200/60
+                              flex items-center justify-center text-stone-600 shadow-sm">
+                <Bot className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
+              </div>
+              <div className="bg-white border border-stone-100 rounded-2xl rounded-tl-sm
+                              px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm
+                              flex items-center gap-1 sm:gap-1.5">
+                {[0, 160, 320].map(delay => (
+                  <span
+                    key={delay}
+                    className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-stone-400 animate-bounce"
+                    style={{ animationDelay: `${delay}ms` }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ── Input bar ───────────────────────────────────────────────────── */}
+      <div className="shrink-0 bg-white border-t border-stone-100 z-10
+                      px-2 py-1.5
+                      sm:px-4 sm:py-2.5
+                      md:px-5 md:py-3">
+        <div className="flex items-center justify-between
+                        bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl md:rounded-2xl
+                        px-2.5 py-1.5 sm:px-3.5 sm:py-2 md:px-4 md:py-2.5
+                        shadow-sm gap-2">
+          <span className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm
+                           text-stone-400 italic truncate">
+            {statusText}
           </span>
-          <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-500">
-            <ArrowRight className="w-4 h-4" />
+          <div className="shrink-0
+                          w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8
+                          rounded-full bg-[#5c3a21]/10
+                          flex items-center justify-center text-[#5c3a21]">
+            <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5" />
           </div>
         </div>
       </div>
