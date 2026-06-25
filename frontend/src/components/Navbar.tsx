@@ -17,8 +17,8 @@ export function Navbar() {
       
       <div className="hidden md:flex items-center gap-8">
         <a href="#features" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">Features</a>
-        <a href="https://github.com/Baisampayan1324/Documind" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">GitHub</a>
-        <Link to="/About.tsx" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">About</Link>
+        <a href="https://github.com/Baisampayan1324/Documind" target="_blank" rel="noopener noreferrer" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">GitHub</a>
+        <Link to="/about" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">About</Link>
       </div>
 
       <div className="flex items-center gap-2">
@@ -46,7 +46,7 @@ export function Navbar() {
             className="absolute top-full left-0 right-0 mt-4 bg-surface-container-lowest border border-outline-variant/20 rounded-3xl shadow-2xl p-6 flex flex-col gap-4 md:hidden"
           >
             <a href="#features" onClick={() => setIsOpen(false)} className="text-lg font-bold text-primary p-2 hover:bg-surface-container rounded-xl transition-all">Features</a>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" onClick={() => setIsOpen(false)} className="text-lg font-bold text-primary p-2 hover:bg-surface-container rounded-xl transition-all">GitHub</a>
+            <a href="https://github.com/Baisampayan1324/Documind" target="_blank" rel="noopener noreferrer" onClick={() => setIsOpen(false)} className="text-lg font-bold text-primary p-2 hover:bg-surface-container rounded-xl transition-all">GitHub</a>
             <Link to="/about" onClick={() => setIsOpen(false)} className="text-lg font-bold text-primary p-2 hover:bg-surface-container rounded-xl transition-all">About</Link>
             <div className="h-px bg-outline-variant/10 my-2" />
             <Link to={getStartedPath} onClick={() => setIsOpen(false)} className="bg-primary text-on-primary text-center py-4 rounded-xl font-bold shadow-lg">
