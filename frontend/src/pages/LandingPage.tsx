@@ -140,15 +140,15 @@ export default function LandingPage() {
             <div>
               <h4 className="font-bold text-primary mb-4 sm:mb-6 uppercase tracking-widest text-xs">Company</h4>
               <ul className="space-y-3 sm:space-y-4">
-                <li><Link to="/about" className="text-sm text-on-surface-variant hover:text-primary transition-colors">About</Link></li>
-                <li><Link to="/privacy" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/terms" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Terms of Service</Link></li>
+                <li><Link to="/About.tsx" className="text-sm text-on-surface-variant hover:text-primary transition-colors">About</Link></li>
+                <li><Link to="/PrivacyPolicy.tsx" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/TermsOfService.tsx" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Terms of Service</Link></li>
               </ul>
             </div>
           </div>
           <div className="pt-6 sm:pt-8 border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-xs text-outline font-medium text-center md:text-left">
-              © 2024 DocuMind. All rights reserved. Crafted for the curious.
+              © 2026 DocuMind. All rights reserved. Crafted for the curious.
             </p>
           </div>
         </div>

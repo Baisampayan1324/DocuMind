@@ -17,8 +17,8 @@ export function Navbar() {
       
       <div className="hidden md:flex items-center gap-8">
         <a href="#features" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">Features</a>
-        <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">GitHub</a>
-        <Link to="/about" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">About</Link>
+        <a href="https://github.com/Baisampayan1324/Documind" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">GitHub</a>
+        <Link to="/About.tsx" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">About</Link>
       </div>
 
       <div className="flex items-center gap-2">
